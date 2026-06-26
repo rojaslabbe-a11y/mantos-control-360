@@ -122,6 +122,50 @@ h2.title{font-size:22px;margin:5px 0 4px}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media(max-width:880px){.sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:.25s;box-shadow:var(--shadow)}.sidebar.open{transform:translateX(0)}.hamb{display:flex}.content{padding:16px}h2.title{font-size:19px}}
+
+/* ====== Rediseño visual: panel derecho blanco + sidebar azul con profundidad ====== */
+.sidebar{
+  background:
+    radial-gradient(140% 55% at 50% -10%, rgba(88,152,228,.30), transparent 60%),
+    linear-gradient(180deg,#1b4c86 0%,#123459 48%,#0c2140 100%);
+  border-right:1px solid rgba(125,175,235,.20);
+  box-shadow:6px 0 34px rgba(6,18,40,.45);
+}
+.sb-brand,.sb-faena,.sb-user{border-color:rgba(150,195,245,.16)}
+.sb-item{transition:.16s}
+.sb-item:hover{background:rgba(160,200,245,.12);color:#fff}
+.sb-item.on{
+  background:linear-gradient(120deg,rgba(240,149,74,.26),rgba(240,149,74,.06));
+  color:var(--copper2);border-color:rgba(240,149,74,.42);
+  box-shadow:0 8px 20px rgba(0,0,0,.28);
+}
+
+/* Panel derecho en tema claro (predomina el blanco) */
+.main{
+  --txt:#15273b; --muted:#5d738c;
+  --surface:#ffffff; --surface2:#eef3fa; --bg2:#f4f8fc;
+  --line:rgba(18,44,82,.10); --line2:rgba(18,44,82,.16);
+  background:#f6f9fc; color:var(--txt);
+}
+.main .topbar2{background:rgba(255,255,255,.94);border-bottom:1px solid rgba(18,44,82,.10)}
+.main .tb-title,.main h2.title,.main .kpi .val,.main .lrow .mid b,.main .tbl tfoot td{color:#15273b}
+.main .crumb{color:#b85c1c}
+.main .content{background:#f6f9fc}
+.main .card,.main .chartbox{background:linear-gradient(160deg,#ffffff,#f2f7fc);border:1px solid rgba(18,44,82,.09);box-shadow:0 6px 18px rgba(24,56,104,.07)}
+.main .ministat{background:#fff;border:1px solid rgba(18,44,82,.09);box-shadow:0 4px 12px rgba(24,56,104,.05)}
+.main .lrow,.main .perm{background:#fff;border:1px solid rgba(18,44,82,.09);box-shadow:0 3px 10px rgba(24,56,104,.045)}
+.main input,.main select,.main textarea,.main .cell{background:#fff;border:1px solid rgba(18,44,82,.17);color:#15273b}
+.main input:focus,.main select:focus,.main .cell:focus{border-color:var(--copper);background:#fff7f0}
+.main select option{background:#fff;color:#15273b}
+.main .track{background:rgba(18,44,82,.11)}
+.main .iconbtn{background:#fff;border:1px solid rgba(18,44,82,.16);color:#3c5476}
+.main .iconbtn:hover{background:#eef3fa}
+.main .tabs button{background:#fff;border:1px solid rgba(18,44,82,.16);color:#5d738c}
+.main .tabs button.on{background:var(--copper);color:#fff;border-color:var(--copper)}
+.main .chip{background:#fff;border:1px solid rgba(18,44,82,.16)}
+.main .tbl th,.main .tbl td{border-bottom:1px solid rgba(18,44,82,.10)}
+.main .tbl tfoot td{border-top:2px solid rgba(18,44,82,.18)}
+.main .rolehead .cnt{background:rgba(18,44,82,.06)}
 </style>
 </head>
 <body>
@@ -190,8 +234,8 @@ let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CF
 /* ===== Helpers ===== */
 const $=(s,r)=>(r||document).querySelector(s);
 const fmt=n=>n==null?'—':Math.round(n).toLocaleString('es-CL');
-const fmtM=n=>n==null?'—':'$'+(n/1000).toLocaleString('es-CL',{maximumFractionDigits:1})+'M';
-const fmtK=n=>n==null?'—':'$'+Math.round(n).toLocaleString('es-CL')+'k';
+const fmtM=n=>n==null?'—':'US$'+(n/1000).toLocaleString('es-CL',{maximumFractionDigits:1})+'M';
+const fmtK=n=>n==null?'—':'US$'+Math.round(n).toLocaleString('es-CL')+'k';
 function uid(p){return p+Math.random().toString(36).slice(2,7);}
 function slug(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'.').replace(/^\.+|\.+$/g,'');}
 function roleOf(u){return DB.roles.find(r=>r.id===(u&&u.role_id));}
