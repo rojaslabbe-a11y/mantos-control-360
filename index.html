@@ -115,6 +115,7 @@ h2.title{font-size:22px;margin:5px 0 4px}
 .rolehead .cnt{font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);padding:3px 10px;border-radius:20px}
 .modal{position:fixed;inset:0;background:rgba(4,9,16,.72);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}
 .sheet{width:100%;max-width:440px;background:var(--bg2);border-radius:20px;border:1px solid var(--line2);padding:22px;max-height:88vh;overflow-y:auto}
+.sheet.wide{max-width:1200px;width:94%;padding:24px 26px}
 .sheet h3{margin:0 0 14px;font-size:18px}
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--copper);color:#fff;padding:11px 20px;border-radius:30px;font-size:13px;font-weight:600;z-index:90;opacity:0;transition:.25s;box-shadow:var(--shadow)}
 .toast.show{opacity:1;bottom:34px}
@@ -407,13 +408,26 @@ function reportViz(r){var cols=r.cols||[];var rows=(r.rows||[]).filter(function(
   var stats='<div class="statwrap">'+numIdx.map(function(i,k){return '<div class="ministat"><div class="l">'+cols[i]+'</div><div class="v">'+totals[k].toLocaleString('es-CL',{maximumFractionDigits:1})+'</div></div>';}).join('')+'</div>';
   var bars=rows.map(function(x){var v=parseFloat(x[mi])||0;return '<div class="barrow"><div class="top"><b>'+(x[0]==null?'':x[0])+'</b><span class="n">'+v.toLocaleString('es-CL',{maximumFractionDigits:1})+'</span></div><div class="track"><div class="fill '+(v<0?'ok':'')+'" style="width:'+Math.min(100,Math.abs(v)/max*100)+'%"></div></div></div>';}).join('');
   return '<div class="sectit"><span class="lft">Resumen · '+cols[mi]+'</span></div>'+stats+'<div class="card">'+bars+'</div>';}
-function openReport(id){var r=DB.reports.find(function(x){return x.id===id;});if(!r)return;var t=DB.reportTypes.find(function(x){return x.id===r.type;})||{name:'—'};var cols=r.cols||[],rows=r.rows||[];var data;
-  if(rows.length){var head='<tr>'+cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr>';var body=rows.slice(0,40).map(function(row){return '<tr>'+cols.map(function(c,i){return '<td>'+(row[i]==null?'':row[i])+'</td>';}).join('')+'</tr>';}).join('');
-    data=reportViz(r)+'<div class="sectit"><span class="lft">Datos del informe</span><span class="pill">'+rows.length+' filas</span></div><div class="card nopad" style="overflow-x:auto;max-height:280px"><table class="tbl">'+head+body+'</table></div>';}
-  else{data='<div class="muted" style="margin-top:10px">Sin planilla cargada.</div>';}
-  modal('<h3>'+r.name+'</h3><div class="muted" style="margin-bottom:12px">'+t.name+' · '+r.area+' · '+(r.fecha||'')+'</div><div class="grid g2"><div class="card kpi"><div class="lbl">Estado</div><div class="val" style="font-size:16px">'+(r.estado==='curso'?'En curso':'Cerrado')+'</div></div><div class="card kpi"><div class="lbl">Avance</div><div class="val">'+(r.avance||0)+'%</div></div></div><div class="track" style="margin:14px 0"><div class="fill" style="width:'+(r.avance||0)+'%"></div></div>'+data+
-   (isAdmin()?('<div class="sectit"><span class="lft">'+ic('upload',16)+' Alimentar con planilla</span></div><input type="file" id="rp_file" accept=".xlsx,.xls,.csv" style="margin:6px 0"><div class="flexbtns"><button class="btn" style="width:auto" onclick="feedReportModal(\''+r.id+'\')">'+ic('upload',16)+' Cargar planilla</button><button class="btn danger" style="width:auto" onclick="delReportCfg(\''+r.id+'\')">Eliminar</button></div>'):'')+
-   '<button class="btn ghost" style="margin-top:10px" onclick="closeModal()">Cerrar</button>');}
+function openReport(id){var r=DB.reports.find(function(x){return x.id===id;});if(!r)return;var t=DB.reportTypes.find(function(x){return x.id===r.type;})||{name:'—'};var cols=r.cols||[],rows=r.rows||[];
+  var drows=rows.filter(function(x){return !/total/i.test(''+((x&&x[0])||''));});
+  var numIdx=cols.map(function(c,i){return i;}).filter(function(i){return i>0&&drows.some(function(x){return x[i]!==''&&x[i]!=null&&!isNaN(parseFloat(x[i]));});});
+  var cards='<div class="ministat"><div class="l">Estado</div><div class="v" style="font-size:17px">'+(r.estado==='curso'?'En curso':'Cerrado')+'</div></div>'+
+    '<div class="ministat"><div class="l">Avance</div><div class="v">'+(r.avance||0)+'%</div><div class="track" style="margin-top:7px"><div class="fill" style="width:'+(r.avance||0)+'%"></div></div></div>'+
+    numIdx.map(function(i){var tot=drows.reduce(function(s,x){return s+(parseFloat(x[i])||0);},0);return '<div class="ministat"><div class="l">'+cols[i]+'</div><div class="v">'+tot.toLocaleString('es-CL',{maximumFractionDigits:1})+'</div></div>';}).join('');
+  var biIdx=cols.findIndex(function(c){return /budget|presup/i.test(c);});var riIdx=cols.findIndex(function(c){return /real|ejec/i.test(c);});
+  var chartHtml='';
+  if(biIdx>=0&&riIdx>=0&&drows.length){var labels=drows.map(function(x){return ''+(x[0]==null?'':x[0]);});var bud=drows.map(function(x){return parseFloat(x[biIdx])||0;});var rea=drows.map(function(x){return parseFloat(x[riIdx])||0;});
+    chartHtml='<div class="sectit"><span class="lft">Budget vs Real por '+(cols[0]||'área')+'</span></div><div class="chartbox">'+barChart(labels,bud,rea)+'</div>';}
+  else if(numIdx.length&&drows.length){var mi=numIdx[0];var mx=Math.max.apply(null,[1].concat(drows.map(function(x){return Math.abs(parseFloat(x[mi])||0);})));
+    var bars=drows.map(function(x){var v=parseFloat(x[mi])||0;return '<div class="barrow"><div class="top"><b>'+(x[0]==null?'':x[0])+'</b><span class="n">'+v.toLocaleString('es-CL',{maximumFractionDigits:1})+'</span></div><div class="track"><div class="fill" style="width:'+Math.min(100,Math.abs(v)/mx*100)+'%"></div></div></div>';}).join('');
+    chartHtml='<div class="sectit"><span class="lft">'+cols[mi]+' por '+(cols[0]||'fila')+'</span></div><div class="card">'+bars+'</div>';}
+  var tableHtml='';
+  if(rows.length){var head='<tr>'+cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr>';var body=rows.map(function(row){return '<tr>'+cols.map(function(c,i){return '<td>'+(row[i]==null?'':row[i])+'</td>';}).join('')+'</tr>';}).join('');
+    tableHtml='<div class="sectit"><span class="lft">Detalle completo</span><span class="pill">'+rows.length+' filas</span></div><div class="card nopad" style="overflow-x:auto"><table class="tbl">'+head+body+'</table></div>';}
+  else{tableHtml='<div class="empty">Este informe aún no tiene datos. El administrador los carga desde Configuración.</div>';}
+  modalWide('<div class="crumb">'+ic('informes',13)+' '+t.name+'</div><h2 class="title" style="margin-top:2px">'+r.name+'</h2><div class="muted" style="margin-bottom:14px">'+r.area+' · '+(r.fecha||'')+'</div>'+
+    '<div class="statwrap">'+cards+'</div>'+chartHtml+tableHtml+
+    '<button class="btn ghost" style="margin-top:16px;width:auto" onclick="closeModal()">Cerrar</button>');}
 function feedReportFile(id,file){var r=DB.reports.find(function(x){return x.id===id;});if(!r||!file)return;var reader=new FileReader();
   reader.onload=async function(e){try{var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});var ws=wb.Sheets[wb.SheetNames[0]];var d=XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false});if(!d.length)return toast('Planilla vacía');
     r.cols=d[0].map(function(c){return (''+(c==null?'':c)).trim()||'Columna';});r.rows=d.slice(1).filter(function(row){return row&&row.some(function(c){return c!==''&&c!=null;});});
@@ -422,11 +436,19 @@ function feedReportFile(id,file){var r=DB.reports.find(function(x){return x.id==
 function feedReportModal(id){var f=$('#rp_file').files[0];if(!f)return toast('Selecciona un archivo');closeModal();feedReportFile(id,f);}
 function feedReport(id,inp){if(inp.files[0])feedReportFile(id,inp.files[0]);}
 function cfgInformes(){var f=curFaena();var list=DB.reports.filter(function(r){return r.faena===f;}).map(function(r){var t=DB.reportTypes.find(function(x){return x.id===r.type;})||{name:'-'};
-  return '<div class="lrow"><div class="ic">'+ic(r.estado==='curso'?'clock':'check',20)+'</div><div class="mid"><b>'+r.name+'</b><span>'+t.name+' · '+r.area+' · '+((r.rows&&r.rows.length)?('<b style="color:var(--copper2)">'+r.rows.length+' filas</b>'):'sin datos')+'</span></div><input type="file" id="ri_'+r.id+'" accept=".xlsx,.xls,.csv" style="display:none" onchange="feedReport(\''+r.id+'\',this)"><button class="iconbtn" title="Cargar planilla" onclick="document.getElementById(\'ri_'+r.id+'\').click()" style="border-color:var(--copper);color:var(--copper2)">'+ic('upload',16)+'</button><button class="iconbtn" onclick="openReport(\''+r.id+'\')" title="Ver dashboard">'+ic('informes',16)+'</button><button class="iconbtn" onclick="delReportCfg(\''+r.id+'\')">'+ic('trash',16)+'</button></div>';}).join('');
+  return '<div class="lrow"><div class="ic">'+ic(r.estado==='curso'?'clock':'check',20)+'</div><div class="mid"><b>'+r.name+'</b><span>'+t.name+' · '+r.area+' · '+((r.rows&&r.rows.length)?('<b style="color:var(--copper2)">'+r.rows.length+' filas</b>'):'sin datos')+'</span></div><input type="file" id="ri_'+r.id+'" accept=".xlsx,.xls,.csv" style="display:none" onchange="feedReport(\''+r.id+'\',this)"><button class="iconbtn" title="Cargar planilla" onclick="document.getElementById(\'ri_'+r.id+'\').click()" style="border-color:var(--copper);color:var(--copper2)">'+ic('upload',16)+'</button><button class="iconbtn" onclick="openEditReport(\''+r.id+'\')" title="Editar informe">'+ic('edit',16)+'</button><button class="iconbtn" onclick="openReport(\''+r.id+'\')" title="Ver dashboard">'+ic('informes',16)+'</button><button class="iconbtn" onclick="delReportCfg(\''+r.id+'\')">'+ic('trash',16)+'</button></div>';}).join('');
   return '<div class="banner">'+ic('informes',18)+'<div>El administrador crea los informes y les sube su planilla Excel. Los usuarios los ven como dashboard en el módulo Informes.</div></div>'+(list||'<div class="empty">Sin informes.</div>')+'<div class="card" style="margin-top:8px"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('plus',16)+' Nuevo informe</span></div><div class="field"><label>Nombre</label><input id="ci_name" placeholder="Ej: EMS Julio 2026"></div><div class="row2"><div class="field"><label>Tipo</label><select id="ci_type">'+DB.reportTypes.map(function(t){return '<option value="'+t.id+'">'+t.name+'</option>';}).join('')+'</select></div><div class="field"><label>Estado</label><select id="ci_estado"><option value="curso">En curso</option><option value="cerrado">Cerrado</option></select></div></div><div class="field"><label>Área</label><input id="ci_area" value="Consolidado"></div><button class="btn" style="width:auto" onclick="addReportCfg(\''+f+'\')">'+ic('plus',16)+' Crear informe</button></div>';}
 async function addReportCfg(f){var name=$('#ci_name').value.trim();if(!name)return toast('Ingresa un nombre');var est=$('#ci_estado').value;var rep={id:uid('rp'),faena:f,type:$('#ci_type').value,name:name,estado:est,area:$('#ci_area').value||'Consolidado',avance:est==='cerrado'?100:10,fecha:new Date().toISOString().slice(0,10),cols:[],rows:[]};
   try{await rest('mantos_reports','POST',rep);DB.reports.unshift(rep);render();toast('Informe creado');}catch(e){toast('Error: '+e.message);}}
 async function delReportCfg(id){if(!confirm('¿Eliminar informe?'))return;try{await rest('mantos_reports?id=eq.'+id,'DELETE');DB.reports=DB.reports.filter(function(r){return r.id!==id;});closeModal();render();toast('Informe eliminado');}catch(e){toast('Error: '+e.message);}}
+function openEditReport(id){var r=DB.reports.find(function(x){return x.id===id;});if(!r)return;
+  modal('<h3>'+ic('edit',18)+' Editar informe</h3><div class="muted" style="margin-bottom:12px">Modifica los datos del informe. La planilla se sube con el botón de carga.</div>'+
+   '<div class="field"><label>Nombre</label><input id="ei_name" value="'+(r.name||'').replace(/"/g,'&quot;')+'"></div>'+
+   '<div class="row2"><div class="field"><label>Tipo</label><select id="ei_type">'+DB.reportTypes.map(function(t){return '<option value="'+t.id+'" '+(t.id===r.type?'selected':'')+'>'+t.name+'</option>';}).join('')+'</select></div><div class="field"><label>Estado</label><select id="ei_estado"><option value="curso" '+(r.estado==='curso'?'selected':'')+'>En curso</option><option value="cerrado" '+(r.estado==='cerrado'?'selected':'')+'>Cerrado</option></select></div></div>'+
+   '<div class="row2"><div class="field"><label>Área</label><input id="ei_area" value="'+(r.area||'').replace(/"/g,'&quot;')+'"></div><div class="field"><label>Avance %</label><input id="ei_avance" type="number" min="0" max="100" value="'+(r.avance||0)+'"></div></div>'+
+   '<button class="btn" style="width:auto" onclick="saveEditReport(\''+id+'\')">'+ic('check',16)+' Guardar cambios</button><button class="btn ghost" style="margin-top:8px" onclick="closeModal()">Cancelar</button>');}
+async function saveEditReport(id){var r=DB.reports.find(function(x){return x.id===id;});if(!r)return;var upd={name:($('#ei_name').value||'').trim()||r.name,type:$('#ei_type').value,estado:$('#ei_estado').value,area:($('#ei_area').value||'').trim()||'Consolidado',avance:Math.max(0,Math.min(100,Number($('#ei_avance').value)||0))};
+  try{await rest('mantos_reports?id=eq.'+id,'PATCH',upd);Object.assign(r,upd);closeModal();render();toast('Informe actualizado');}catch(e){toast('Error: '+e.message);}}
 
 /* ===== WhatsApp ===== */
 function appURL(){return location.origin+location.pathname;}
@@ -513,6 +535,7 @@ function importToArea(f){const file=$('#su_file').files[0];if(!file)return toast
 
 /* ===== Modal ===== */
 function modal(h){$('#modalRoot').innerHTML='<div class="modal" onclick="if(event.target===this)closeModal()"><div class="sheet">'+h+'</div></div>';}
+function modalWide(h){$('#modalRoot').innerHTML='<div class="modal" onclick="if(event.target===this)closeModal()"><div class="sheet wide">'+h+'</div></div>';}
 function closeModal(){$('#modalRoot').innerHTML='';}
 
 /* ===== Icono de app (pantalla de inicio) ===== */
