@@ -126,10 +126,10 @@ h2.title{font-size:22px;margin:5px 0 4px}
 /* ====== Rediseño visual: panel derecho blanco + sidebar azul con profundidad ====== */
 .sidebar{
   background:
-    radial-gradient(140% 55% at 50% -10%, rgba(88,152,228,.30), transparent 60%),
-    linear-gradient(180deg,#1b4c86 0%,#123459 48%,#0c2140 100%);
-  border-right:1px solid rgba(125,175,235,.20);
-  box-shadow:6px 0 34px rgba(6,18,40,.45);
+    radial-gradient(140% 55% at 50% -10%, rgba(72,134,208,.24), transparent 60%),
+    linear-gradient(180deg,#133a68 0%,#0d2745 48%,#07182f 100%);
+  border-right:1px solid rgba(110,160,220,.18);
+  box-shadow:6px 0 34px rgba(4,12,28,.50);
 }
 .sb-brand,.sb-faena,.sb-user{border-color:rgba(150,195,245,.16)}
 .sb-item{transition:.16s}
@@ -166,6 +166,54 @@ h2.title{font-size:22px;margin:5px 0 4px}
 .main .tbl th,.main .tbl td{border-bottom:1px solid rgba(18,44,82,.10)}
 .main .tbl tfoot td{border-top:2px solid rgba(18,44,82,.18)}
 .main .rolehead .cnt{background:rgba(18,44,82,.06)}
+
+/* ====== Refresh visual v2 — más carácter ====== */
+.sb-brand{padding:20px 16px 16px}
+.sb-item{font-size:13px;padding:11px 13px;border-radius:12px}
+.sb-item.on{box-shadow:0 8px 22px rgba(0,0,0,.30)}
+.main .topbar2{padding:15px 24px}
+.main .tb-title{font-size:17px;font-weight:800;letter-spacing:-.2px}
+.main .sectit .lft{position:relative;padding-left:13px;font-size:14.5px;font-weight:800}
+.main .sectit .lft::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:4px;height:16px;border-radius:3px;background:linear-gradient(180deg,var(--copper2),var(--copper-d))}
+.main h2.title{font-size:24px;font-weight:900;letter-spacing:-.6px;margin:6px 0 2px}
+.main .card{border-radius:18px}
+.main .card.kpi{padding:18px 18px 16px;border-radius:18px;background:linear-gradient(165deg,#fff,#eef4fb);position:relative;overflow:hidden}
+.main .card.kpi::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(226,123,46,.10),transparent 70%)}
+.main .card.kpi .lbl{font-size:11px;font-weight:700;color:#5d738c}
+.main .card.kpi .val{font-size:30px;font-weight:900;letter-spacing:-1px;color:#12253a;margin-top:2px}
+.main .card.kpi.accent::before{width:5px;background:linear-gradient(180deg,var(--copper2),var(--copper-d))}
+.main .statwrap{gap:13px}
+.main .ministat{border-radius:16px;padding:15px 16px;border:1px solid rgba(18,44,82,.08);background:#fff;box-shadow:0 6px 16px rgba(24,56,104,.06);position:relative;overflow:hidden;transition:.18s}
+.main .ministat::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--copper2),var(--steel))}
+.main .ministat:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(24,56,104,.10)}
+.main .ministat .l{font-size:10px;letter-spacing:.6px;font-weight:700}
+.main .ministat .v{font-size:21px;font-weight:900;letter-spacing:-.5px;margin-top:5px}
+.main .delta{padding:4px 11px;border-radius:30px;font-weight:800}
+.main .delta.up{color:#c0392b;background:rgba(231,76,60,.10)}
+.main .delta.down{color:#1e8e54;background:rgba(46,204,113,.12)}
+.main .btn{box-shadow:0 8px 18px rgba(226,123,46,.22);border-radius:13px;font-weight:800}
+.main .btn:hover{filter:brightness(1.04)}
+.main .btn.ghost{box-shadow:none}
+.main .btn.wa{box-shadow:0 8px 18px rgba(37,211,102,.25)}
+.main .chartbox{border-radius:18px;padding:16px;height:250px;box-shadow:0 6px 18px rgba(24,56,104,.06)}
+.main .lrow{border-radius:15px;transition:.16s}
+.main .lrow:hover{transform:translateX(2px);box-shadow:0 8px 18px rgba(24,56,104,.09)}
+.main .banner{border-radius:15px}
+.dropzone{border:2px dashed rgba(18,44,82,.22);border-radius:18px;padding:30px 18px;text-align:center;background:linear-gradient(160deg,#fff,#f1f6fc);cursor:pointer;transition:.18s}
+.dropzone:hover,.dropzone.drag{border-color:var(--copper);background:#fff7f0;transform:translateY(-1px)}
+.dropzone .dzic{width:54px;height:54px;border-radius:16px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--copper2),var(--copper-d));color:#fff;box-shadow:0 10px 22px rgba(226,123,46,.30)}
+.dropzone h4{margin:0 0 4px;font-size:15px;color:#12253a}.dropzone p{margin:0;font-size:12px;color:#5d738c}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0 6px}
+.mapcell{background:#fff;border:1px solid rgba(18,44,82,.10);border-radius:12px;padding:10px 12px}
+.mapcell .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:#5d738c;font-weight:700}
+.mapcell .v{font-size:13px;font-weight:800;color:#12253a;margin-top:3px}
+.mapcell.miss{border-color:rgba(231,76,60,.4)}.mapcell.miss .v{color:#c0392b}
+.pill-ok{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:#1e8e54;background:rgba(46,204,113,.12);padding:6px 12px;border-radius:30px}
+.heroband{background:linear-gradient(120deg,#123a68,#0c2140);border-radius:20px;padding:20px 22px;color:#eaf2fb;margin-bottom:14px;position:relative;overflow:hidden;box-shadow:0 14px 30px rgba(10,25,55,.22)}
+.heroband::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(226,123,46,.22),transparent 70%)}
+.heroband .hb-t{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#9cc2ec;font-weight:800}
+.heroband .hb-v{font-size:27px;font-weight:900;letter-spacing:-.6px;margin-top:4px}
+.heroband .hb-s{font-size:12.5px;color:#bcd3ee;margin-top:4px}
 </style>
 </head>
 <body>
@@ -222,8 +270,8 @@ const ICONS={dashboard:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="
 function ic(n,s){s=s||18;return '<svg class="ico" viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[n]||'')+'</svg>';}
 const LOGO='<svg viewBox="0 0 330 92" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto"><defs><linearGradient id="cu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaa063"/><stop offset="1" stop-color="#9c5b27"/></linearGradient></defs><path d="M66 8 L26 8 L4 46 L26 84 L66 84 L44 46 Z" fill="url(#cu)"/><rect x="84" y="22" width="3" height="48" fill="#b87333"/><text x="102" y="44" fill="#f4f7fa" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="30" letter-spacing="2">CAPSTONE</text><text x="102" y="76" fill="#cf7d3e" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="25" letter-spacing="6">COPPER</text></svg>';
 
-const MODULES={dashboard:{name:'Dashboard General'},mina:{name:'Costos Mina'},planta:{name:'Costos Planta'},budget:{name:'Budget'},informes:{name:'Informes'},proyeccion:{name:'Proyección Anual'},usuarios:{name:'Crear Perfiles y Usuarios'},claves:{name:'Generar Claves de Acceso'},config:{name:'Configuración'}};
-const MODICON={dashboard:'dashboard',mina:'mina',planta:'planta',budget:'budget',informes:'informes',proyeccion:'proyeccion',usuarios:'usuarios',claves:'key',config:'config'};
+const MODULES={dashboard:{name:'Dashboard General'},cierre:{name:'Cierre de Mes'},mina:{name:'Costos Mina'},planta:{name:'Costos Planta'},budget:{name:'Budget'},informes:{name:'Informes'},proyeccion:{name:'Proyección Anual'},usuarios:{name:'Crear Perfiles y Usuarios'},claves:{name:'Generar Claves de Acceso'},config:{name:'Configuración'}};
+const MODICON={dashboard:'dashboard',cierre:'doc',mina:'mina',planta:'planta',budget:'budget',informes:'informes',proyeccion:'proyeccion',usuarios:'usuarios',claves:'key',config:'config'};
 const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MES_ACTUAL=5, ANIO=2026;
@@ -235,9 +283,27 @@ let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CF
 const $=(s,r)=>(r||document).querySelector(s);
 const fmt=n=>n==null?'—':Math.round(n).toLocaleString('es-CL');
 const fmtM=n=>n==null?'—':'US$'+(n/1000).toLocaleString('es-CL',{maximumFractionDigits:1})+'M';
-const fmtK=n=>n==null?'—':'US$'+Math.round(n).toLocaleString('es-CL')+'k';
+const fmtK=n=>n==null?'—':'US$'+Math.round(n).toLocaleString('es-CL')+'K';
 function uid(p){return p+Math.random().toString(36).slice(2,7);}
 function slug(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'.').replace(/^\.+|\.+$/g,'');}
+/* ===== Parseo adaptativo de planillas ===== */
+const MES_FULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MES_EN=['january','february','march','april','may','june','july','august','september','october','november','december'];
+function parseNum(v){if(v==null)return null;if(typeof v==='number')return isFinite(v)?v:null;let s=(''+v).trim();if(!s)return null;s=s.replace(/us\$|\$|\s|kusd|musd|usd/gi,'');if(!s||/^[-+]?$/.test(s))return null;
+  const hasC=s.indexOf(',')>=0,hasD=s.indexOf('.')>=0;
+  if(hasC&&hasD){if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(/,/g,'');}
+  else if(hasC){const p=s.split(',');if(p.length>1&&p[p.length-1].length===3)s=s.replace(/,/g,'');else s=s.replace(',','.');}
+  else if(hasD){const p=s.split('.');if(p.length>2||(p.length===2&&p[1].length===3))s=s.replace(/\./g,'');}
+  const n=parseFloat(s);return isFinite(n)?n:null;}
+function monthIndex(v){if(v==null)return -1;if(typeof v==='number'&&v>=1&&v<=12)return Math.floor(v)-1;let s=(''+v).trim().toLowerCase();if(!s)return -1;
+  if(/^\d{1,2}$/.test(s)){const n=parseInt(s,10);if(n>=1&&n<=12)return n-1;}
+  const k=s.slice(0,3);let i=MESES.findIndex(m=>m.toLowerCase()===k);if(i>=0)return i;
+  i=MES_FULL.findIndex(m=>m.slice(0,3)===k);if(i>=0)return i;
+  i=MES_EN.findIndex(m=>m.slice(0,3)===k);if(i>=0)return i;
+  const d=new Date(s);if(!isNaN(d.getTime())&&/\d/.test(s))return d.getMonth();
+  return -1;}
+function findCol(head,syns){for(let i=0;i<head.length;i++){for(let j=0;j<syns.length;j++){if(head[i].indexOf(syns[j])>=0)return i;}}return -1;}
+const COLSYN={area:['área','area','centro de coste2','nombre ceco','glosa','concepto'],mes:['mes','meses','periodo','período','month','fecha'],bud:['budget','bdg','presupuesto','ppto','presup','ol 3','ol 6','ol3','ol6','outlook','forecast','plan','meta'],real:['real','ejecut','ejec','gasto','actual','incurrido','consumo','gastado']};
 function roleOf(u){return DB.roles.find(r=>r.id===(u&&u.role_id));}
 function perms(){if(!SESSION)return[];const r=roleOf(SESSION);return r?(r.perms||[]):[];}
 function can(m){return perms().indexOf(m)>=0;}
@@ -263,6 +329,21 @@ function barChart(labels,budget,real){const W=Math.max(380,labels.length*46),H=2
     s+='<text x="'+(x+bw*0.47)+'" y="'+(H-6)+'" fill="#90a4ba" font-size="9" text-anchor="middle">'+labels[i]+'</text>';}
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%">'+s+'</svg>'+
     '<div style="display:flex;gap:16px;justify-content:center;font-size:11px;color:var(--muted);margin-top:6px"><span><span style="display:inline-block;width:10px;height:10px;background:rgba(91,140,179,.65);border-radius:2px"></span> Budget</span><span><span style="display:inline-block;width:10px;height:10px;background:#e27b2e;border-radius:2px"></span> Real</span></div>';}
+function cumBudget(arr){let a=0;return arr.map(v=>(a+=(v||0)));}
+function cumReal(arr){let a=0,stop=false;return arr.map(v=>{if(stop||v==null){stop=true;return null;}a+=v;return a;});}
+function lineChart(labels,sA,sB,labA,labB){const W=Math.max(380,labels.length*46),H=200,padL=10,padR=10,top=16,base=H-22;
+  const all=sA.concat(sB).filter(x=>x!=null);const max=Math.max(1,...all);
+  const X=i=>padL+(W-padL-padR)*(labels.length<=1?0:i/(labels.length-1));const Y=v=>base-(v/max)*(base-top);
+  const line=arr=>{let d='';arr.forEach((v,i)=>{if(v==null)return;d+=(d?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' ';});return d;};
+  const bDef=sB.map((v,i)=>({v,i})).filter(o=>o.v!=null);let area='';
+  if(bDef.length>1)area='M'+X(bDef[0].i).toFixed(1)+' '+base+' '+bDef.map(o=>'L'+X(o.i).toFixed(1)+' '+Y(o.v).toFixed(1)).join(' ')+' L'+X(bDef[bDef.length-1].i).toFixed(1)+' '+base+' Z';
+  let dots='';bDef.forEach(o=>{dots+='<circle cx="'+X(o.i).toFixed(1)+'" cy="'+Y(o.v).toFixed(1)+'" r="2.5" fill="#e27b2e"/>';});
+  let lbl='';labels.forEach((l,i)=>{lbl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" fill="#90a4ba" font-size="9" text-anchor="middle">'+l+'</text>';});
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%">'+
+    (area?'<path d="'+area+'" fill="rgba(226,123,46,.12)"/>':'')+
+    '<path d="'+line(sA)+'" fill="none" stroke="rgba(91,140,179,.9)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>'+
+    '<path d="'+line(sB)+'" fill="none" stroke="#e27b2e" stroke-width="2.4" stroke-linejoin="round"/>'+dots+lbl+'</svg>'+
+    '<div style="display:flex;gap:16px;justify-content:center;font-size:11px;color:var(--muted);margin-top:6px"><span><span style="display:inline-block;width:12px;height:3px;background:rgba(91,140,179,.9);border-radius:2px;vertical-align:middle"></span> '+(labA||'Budget')+'</span><span><span style="display:inline-block;width:12px;height:3px;background:#e27b2e;border-radius:2px;vertical-align:middle"></span> '+(labB||'Real')+'</span></div>';}
 
 /* ===== AUTH ===== */
 async function doLogin(){const u=$('#lg_user').value.trim(),p=$('#lg_pass').value;if(!u||!p){$('#lg_err').textContent='Ingresa usuario y contraseña.';return;}
@@ -305,21 +386,53 @@ function buildNav(){const top=Object.keys(MODULES).filter(m=>ADMIN_MODS.indexOf(
 function go(m){if(!can(m))return;CURRENT=m;buildNav();render();toggleSidebar(false);$('.content').scrollTop=0;}
 function render(){if(!SESSION)return;$('#tb_name').textContent=SESSION.name;$('#tb_role').textContent=(roleOf(SESSION)||{}).name||'';$('#tbTitle').textContent=modName(CURRENT);
   const cm=(DB.modules||[]).find(m=>m.id===CURRENT);
-  const fns={dashboard:viewDashboard,mina:function(){return viewCostos('mina');},planta:function(){return viewCostos('planta');},budget:viewBudget,informes:viewInformes,proyeccion:viewProyeccion,usuarios:viewUsuarios,claves:viewClaves,config:viewConfig};
+  const fns={dashboard:viewDashboard,cierre:viewCierre,mina:function(){return viewCostos('mina');},planta:function(){return viewCostos('planta');},budget:viewBudget,informes:viewInformes,proyeccion:viewProyeccion,usuarios:viewUsuarios,claves:viewClaves,config:viewConfig};
   $('#viewport').innerHTML=cm?viewCustom(cm):((fns[CURRENT]||viewDashboard)());}
 
 /* ===== Vistas ===== */
+/* ===== Cierre de Mes (dashboard ejecutivo automático) ===== */
+let CIERRE_MES=Math.max(0,MES_ACTUAL-1);
+function setCierreMes(v){CIERRE_MES=+v;render();}
+function monthTot(f,tipo,m){const ar=areasOf(f,tipo);let r=0,b=0,hasR=false;ar.forEach(a=>{const c=C(a.id);b+=c.budget[m]||0;if(c.real[m]!=null){r+=c.real[m];hasR=true;}});return {r:r,b:b,hasR:hasR};}
+function ytdTot(f,tipo,m){let r=0,b=0;for(let k=0;k<=m;k++){const t=monthTot(f,tipo,k);r+=t.r;b+=t.b;}return {r:r,b:b};}
+function viewCierre(){const f=curFaena();const m=Math.min(11,Math.max(0,CIERRE_MES));const fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';
+  const tot=monthTot(f,null,m),ytd=ytdTot(f,null,m),mina=monthTot(f,'mina',m),planta=monthTot(f,'planta',m);
+  const ejec=tot.b?tot.r/tot.b*100:0;const devM=tot.b?(tot.r-tot.b)/tot.b:0;const devY=ytd.b?(ytd.r-ytd.b)/ytd.b:0;
+  const sb=[],sr=[];let ab=0,arr=0;for(let k=0;k<=m;k++){const t=monthTot(f,null,k);ab+=t.b;arr+=t.r;sb.push(ab);sr.push(arr);}const labels=MESES.slice(0,m+1);
+  let areas=areasOf(f).map(a=>{const c=C(a.id);const r=c.real[m],b=c.budget[m]||0;const dv=b?((r||0)-b)/b:0;return {n:a.name,tipo:a.tipo,r:r,b:b,dv:dv,has:(r!=null||b>0)};}).filter(x=>x.has);
+  areas.sort((x,y)=>y.dv-x.dv);
+  const sem=areas.map(a=>{const cls=a.r==null?'warn':(a.dv>0.05?'bad':a.dv>0?'warn':'ok');const lab=a.r==null?'sin real':(a.dv>0.05?'Sobre':a.dv>0?'Límite':'Bajo budget');
+    const bg=cls==='bad'?'rgba(231,76,60,.14)':cls==='warn'?'rgba(232,181,60,.16)':'rgba(46,204,113,.14)';const fg=cls==='bad'?'#c0392b':cls==='warn'?'#b8860b':'#1e8e54';
+    return '<div class="lrow"><div class="ic" style="background:'+bg+';color:'+fg+'">'+ic(a.tipo==='mina'?'mina':'planta',18)+'</div><div class="mid"><b>'+a.n+'</b><span>Real '+fmtK(a.r)+' · Budget '+fmtK(a.b)+'</span></div><div class="end"><span class="tag '+cls+'">'+(a.r==null?'—':(a.dv>0?'+':'')+(a.dv*100).toFixed(0)+'%')+'</span><div class="muted" style="font-size:10px;margin-top:3px">'+lab+'</div></div></div>';}).join('');
+  const over=areas.filter(a=>a.r!=null&&a.dv>0.05).slice(0,3);
+  let hall='<li>Ejecución del mes: <b>'+ejec.toFixed(0)+'%</b> del budget ('+fmtK(tot.r)+' de '+fmtK(tot.b)+').</li>';
+  hall+='<li>Desviación acumulada (YTD): <b style="color:'+(devY>0?'#c0392b':'#1e8e54')+'">'+(devY>0?'+':'')+(devY*100).toFixed(1)+'%</b> ('+fmtM(ytd.r)+' real vs '+fmtM(ytd.b)+' budget).</li>';
+  if(over.length)hall+='<li>Áreas sobre presupuesto: '+over.map(o=>'<b>'+o.n+'</b> ('+(o.dv*100).toFixed(0)+'%)').join(', ')+'.</li>';
+  hall+='<li>Gasto del mes — Mina <b>'+fmtK(mina.r)+'</b> · Planta <b>'+fmtK(planta.r)+'</b>.</li>';
+  const opts=MESES.map((mm,i)=>'<option value="'+i+'" '+(i===m?'selected':'')+'>'+mm+' '+ANIO+'</option>').join('');
+  const devCol=devM>0?'#c0392b':'#1e8e54';
+  function kpiArea(t,lbl,ico){const d=t.b?(t.r-t.b)/t.b:0;return '<div class="card kpi accent"><div class="lbl">'+ic(ico,14)+' '+lbl+'</div><div class="val">'+fmtM(t.r)+'</div><span class="delta '+(d>0?'up':'down')+'">'+(d>0?'+':'')+(d*100).toFixed(1)+'% vs budget</span></div>';}
+  return '<div class="crumb">'+ic('doc',13)+' Gerencia Mantenimiento · '+fn+'</div><h2 class="title">Cierre de Mes</h2>'+
+   '<div class="editbar"><label style="margin:0 8px 0 0">Mes de cierre</label><select onchange="setCierreMes(this.value)" style="max-width:190px">'+opts+'</select></div>'+
+   '<div class="heroband"><div class="hb-t">Cierre '+MESES[m]+' '+ANIO+' · '+fn+'</div><div class="hb-v">'+fmtM(tot.r)+' <span style="font-size:14px;color:#9cc2ec;font-weight:600">de '+fmtM(tot.b)+' budget</span></div><div class="hb-s">Ejecución '+ejec.toFixed(0)+'% del budget mensual · Desviación mes '+(devM>0?'+':'')+(devM*100).toFixed(1)+'% · Acumulado año '+fmtM(ytd.r)+'</div></div>'+
+   '<div class="statwrap"><div class="ministat"><div class="l">Real del mes</div><div class="v">'+fmtM(tot.r)+'</div></div><div class="ministat"><div class="l">Budget del mes</div><div class="v">'+fmtM(tot.b)+'</div></div><div class="ministat"><div class="l">Desviación mes</div><div class="v" style="color:'+devCol+'">'+(devM>0?'+':'')+(devM*100).toFixed(1)+'%</div></div><div class="ministat"><div class="l">Ejecución OPEX</div><div class="v">'+ejec.toFixed(0)+'%</div><div class="track" style="margin-top:7px"><div class="fill '+(ejec>100?'bad':'ok')+'" style="width:'+Math.min(100,ejec)+'%"></div></div></div></div>'+
+   '<div class="grid g2" style="margin-top:13px">'+kpiArea(mina,'Mina · mes','mina')+kpiArea(planta,'Planta · mes','planta')+'</div>'+
+   '<div class="sectit"><span class="lft">Acumulado YTD · Real vs Budget</span><span class="pill">US$K</span></div><div class="chartbox">'+lineChart(labels,sb,sr,'Budget acum.','Real acum.')+'</div>'+
+   '<div class="sectit"><span class="lft">Semáforo por área · '+MESES[m]+'</span><span class="pill">'+areas.length+' áreas</span></div>'+(sem||'<div class="empty">Sin datos del mes</div>')+
+   '<div class="sectit"><span class="lft">Hallazgos clave</span></div><div class="card"><ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px">'+hall+'</ul></div>';}
 function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';const tot=faenaTotals(f),mi=faenaTotals(f,'mina'),pl=faenaTotals(f,'planta');const s=monthly(f,null);
   const dev=(tot.dev>0?'+':'')+(tot.dev*100).toFixed(1)+'%';
   let ar=areasOf(f);let dist=ar.map(a=>{const t=areaTotals(a.id);return {n:a.name,v:t.rAcum};}).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);const mx=Math.max(1,...dist.map(d=>d.v));
   return '<div class="crumb">'+ic('dashboard',13)+' Faena · '+fn+'</div><h2 class="title">Dashboard General</h2>'+
+   '<div class="heroband"><div class="hb-t">Gasto Real acumulado · '+ANIO+'</div><div class="hb-v">'+fmtM(tot.rAcum)+' <span style="font-size:14px;color:#9cc2ec;font-weight:600">de '+fmtM(tot.bAcum)+' budget</span></div><div class="hb-s">Desviación '+dev+' · Proyección de cierre '+fmtM(tot.proy)+' vs budget anual '+fmtM(tot.bAnual)+'</div></div>'+
    '<div class="statwrap"><div class="ministat"><div class="l">Real acumulado</div><div class="v">'+fmtM(tot.rAcum)+'</div></div>'+
    '<div class="ministat"><div class="l">Budget acumulado</div><div class="v">'+fmtM(tot.bAcum)+'</div></div>'+
    '<div class="ministat"><div class="l">Desviación</div><div class="v" style="color:'+(tot.dev>0?'var(--bad)':'var(--ok)')+'">'+dev+'</div></div>'+
    '<div class="ministat"><div class="l">Proyección año</div><div class="v">'+fmtM(tot.proy)+'</div></div></div>'+
    '<div class="grid g2" style="margin-top:13px"><div class="card kpi accent"><div class="lbl">'+ic('mina',14)+' Costo Mina</div><div class="val">'+fmtM(mi.rAcum)+'</div><span class="delta '+(mi.dev>0?'up':'down')+'">'+(mi.dev>0?'+':'')+(mi.dev*100).toFixed(1)+'% vs budget</span></div>'+
    '<div class="card kpi accent"><div class="lbl">'+ic('planta',14)+' Costo Planta</div><div class="val">'+fmtM(pl.rAcum)+'</div><span class="delta '+(pl.dev>0?'up':'down')+'">'+(pl.dev>0?'+':'')+(pl.dev*100).toFixed(1)+'% vs budget</span></div></div>'+
-   '<div class="sectit"><span class="lft">Real vs Budget · '+ANIO+'</span><span class="pill">kUSD / mes</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r)+'</div>'+
+   '<div class="sectit"><span class="lft">Real vs Budget · '+ANIO+'</span><span class="pill">US$K / mes</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r)+'</div>'+
+   '<div class="sectit"><span class="lft">Costo acumulado · Real vs Budget</span><span class="pill">US$K acumulado</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(s.b),cumReal(s.r),'Budget acum.','Real acum.')+'</div>'+
    '<div class="sectit"><span class="lft">Distribución de costo por área</span></div><div class="card">'+(dist.length?dist.map(d=>'<div class="barrow"><div class="top"><b>'+d.n+'</b><span class="n">'+fmtK(d.v)+'</span></div><div class="track"><div class="fill" style="width:'+(d.v/mx*100)+'%"></div></div></div>').join(''):'<div class="empty">Sin datos</div>')+'</div>'+
    '<div class="sectit"><span class="lft">Proyección de cierre de año</span></div><div class="card"><div class="barrow"><div class="top"><b>Real proyectado</b><span class="n">'+fmtM(tot.proy)+' / '+fmtM(tot.bAnual)+'</span></div><div class="track"><div class="fill '+(tot.proy>tot.bAnual?'bad':'ok')+'" style="width:'+Math.min(100,tot.bAnual?tot.proy/tot.bAnual*100:0)+'%"></div></div></div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px"><div class="val" style="font-size:20px;font-weight:800">'+fmtM(tot.proy)+'</div><span class="tag '+(tot.devAnual>0?'bad':'ok')+'">'+(tot.devAnual>0?'+':'')+(tot.devAnual*100).toFixed(1)+'% vs budget</span></div></div>';}
 
@@ -331,6 +444,7 @@ function viewCostos(tipo){const f=curFaena();const t=faenaTotals(f,tipo);const a
    '<div class="card kpi"><div class="lbl">Budget acumulado</div><div class="val">'+fmtM(t.bAcum)+'</div><span class="delta flat">'+ar.length+' áreas</span></div>'+
    '<div class="card kpi"><div class="lbl">Proyección año</div><div class="val">'+fmtM(t.proy)+'</div><span class="delta '+(t.devAnual>0?'up':'down')+'">'+(t.devAnual>0?'+':'')+(t.devAnual*100).toFixed(1)+'%</span></div></div>'+
    '<div class="sectit"><span class="lft">Evolución mensual</span><span class="pill">Real vs Budget</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r)+'</div>'+
+   '<div class="sectit"><span class="lft">Costo acumulado</span><span class="pill">US$K acumulado</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(s.b),cumReal(s.r),'Budget acum.','Real acum.')+'</div>'+
    (canEdit()?('<div class="sectit"><span class="lft">'+ic('edit',16)+' Cargar / editar datos</span><span class="pill">en vivo · kUSD</span></div><div class="banner">'+ic('edit',18)+'<div>Edita Budget y Real por mes. Se guarda en la nube y todos lo ven al actualizar.</div></div>'+editGrid(tipo)):'')+
    '<div class="sectit"><span class="lft">Desglose por área</span></div><div class="card">'+(bars||'<div class="empty">Sin áreas</div>')+'</div>';}
 
@@ -405,7 +519,13 @@ function viewConfig(){if(!can('config'))return '<div class="empty">Sin acceso.</
   const body=({datos:cfgDatos,subir:cfgSubir,informes:cfgInformes,modulos:cfgModules,areas:cfgAreas}[CFG_TAB]||cfgDatos)();
   return '<div class="crumb">'+ic('config',13)+' Administración</div><h2 class="title">Configuración</h2><div class="tabs">'+tabs.map(t=>'<button class="'+(CFG_TAB===t[0]?'on':'')+'" onclick="cfgTab(\''+t[0]+'\')">'+t[1]+'</button>').join('')+'</div>'+body;}
 function cfgTab(t){CFG_TAB=t;render();}
-function cfgDatos(){const url=location.origin+location.pathname;return '<div class="card"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('upload',16)+' Cargar planilla Excel</span><span class="pill">.xlsx / .csv</span></div><p class="muted" style="line-height:1.6">Columnas: <b style="color:var(--copper2)">Área · Mes · Budget · Real</b>. Se vinculan por nombre de área. Se guarda en la nube y todos lo ven.</p><input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" style="margin:8px 0"><div class="flexbtns"><button class="btn" style="width:auto" onclick="importExcel()">'+ic('upload',16)+' Importar a la nube</button><button class="btn ghost" style="width:auto" onclick="downloadTemplate()">'+ic('download',16)+' Plantilla modelo</button><button class="btn ghost" style="width:auto" onclick="openTplEditor()">'+ic('edit',16)+' Modificar modelo Excel</button></div></div>'+'<div class="card" style="margin-top:13px"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('share',16)+' Compartir la plataforma</span></div><p class="muted" style="line-height:1.6">Esta es tu plataforma EN VIVO. Comparte este link con tu equipo y gerente; entran con su usuario y clave y ven los mismos datos.</p><div class="field"><label>Link público</label><input readonly value="'+url+'" onclick="this.select()"></div><div class="flexbtns"><button class="btn wa" style="width:auto" onclick="shareApp()">'+ic('share',16)+' Compartir por WhatsApp</button></div></div>'+
+function cfgDatos(){const url=location.origin+location.pathname;const fn=(DB.faenas.find(x=>x.id===curFaena())||{}).name||'';return '<div class="card"><div class="sectit" style="margin-top:0"><span class="lft">Cargar información</span><span class="pill">SAP · Historial · Excel</span></div>'+
+   '<div class="row2" style="margin-bottom:10px"><div class="field"><label>Asignar los datos a</label><select id="xls_tipo"><option value="mina">Costos Mina</option><option value="planta">Costos Planta</option></select></div><div class="field"><label>Faena</label><input readonly value="'+fn+'"></div></div>'+
+   '<div class="dropzone" id="dz" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="event.preventDefault();this.classList.remove(\'drag\');onImportDrop(event)" onclick="document.getElementById(\'xlsFile\').click()"><div class="dzic">'+ic('upload',26)+'</div><h4>Arrastra tu Excel aquí o haz clic para elegir</h4><p>Export de SAP o Historial de Gastos · detecta columnas, suma por área y mes, y convierte USD a kUSD</p></div>'+
+   '<input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="onImportFile(this)">'+
+   '<div id="importPreview"></div>'+
+   '<div class="flexbtns" style="margin-top:12px"><button class="btn ghost" style="width:auto" onclick="downloadTemplate()">'+ic('download',16)+' Plantilla modelo</button><button class="btn ghost" style="width:auto" onclick="openTplEditor()">'+ic('edit',16)+' Diseñar modelo Excel</button></div></div>'+
+   '<div class="card" style="margin-top:13px"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('share',16)+' Compartir la plataforma</span></div><p class="muted" style="line-height:1.6">Tu plataforma EN VIVO. Comparte el link; tu equipo entra con usuario y clave y ve los mismos datos.</p><div class="field"><label>Link público</label><input readonly value="'+url+'" onclick="this.select()"></div><div class="flexbtns"><button class="btn wa" style="width:auto" onclick="shareApp()">'+ic('share',16)+' Compartir por WhatsApp</button></div></div>'+
    '<div class="card" style="margin-top:13px"><div class="sectit" style="margin-top:0"><span class="lft">Estado del sistema</span></div><div class="perm"><span>Faenas</span><b>'+DB.faenas.length+'</b></div><div class="perm"><span>Áreas</span><b>'+DB.areas.length+'</b></div><div class="perm"><span>Usuarios</span><b>'+DB.users.length+'</b></div><div class="perm"><span>Conexión</span><b style="color:var(--ok)">En la nube ✓</b></div></div>';}
 function cfgModules(){const list=(DB.modules||[]).map(m=>'<div class="lrow"><div class="ic">'+ic(m.icon||'dashboard',20)+'</div><div class="mid"><b>'+m.name+'</b><span>'+((m.rows&&m.rows.length)?m.rows.length+' filas':'sin datos')+(m.descr?' · '+m.descr:'')+'</span></div><button class="iconbtn" onclick="delCustomModule(\''+m.id+'\')">'+ic('trash',16)+'</button></div>').join('');
   const icons=['dashboard','mina','planta','budget','informes','proyeccion','doc','shield','key','check'];
@@ -545,25 +665,63 @@ function renderTplModal(){
    '<button class="btn ghost" style="margin-top:8px" onclick="saveTplAndClose()">'+ic('check',16)+' Guardar como modelo por defecto</button>'+
    '<button class="btn ghost" style="margin-top:8px" onclick="closeModal()">Cerrar</button>');
   const nc=$('#tp_newcol');if(nc)nc.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addTplCol();}});}
-function importExcel(){const file=$('#xlsFile').files[0];if(!file)return toast('Selecciona un archivo');const f=curFaena();const reader=new FileReader();
-  reader.onload=async function(e){try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});const head=rows[0].map(h=>(''+h).toLowerCase());
-    const ci={area:head.findIndex(h=>h.indexOf('area')>=0||h.indexOf('área')>=0),mes:head.findIndex(h=>h.indexOf('mes')>=0),bud:head.findIndex(h=>h.indexOf('budget')>=0||h.indexOf('presup')>=0),real:head.findIndex(h=>h.indexOf('real')>=0||h.indexOf('ejec')>=0)};
-    if(ci.area<0||ci.mes<0)return toast('No se reconocen columnas Área/Mes');const ups=[];let count=0,created=0;
-    for(let i=1;i<rows.length;i++){const row=rows[i];if(!row||row[ci.area]==null)continue;const aname=(''+row[ci.area]).trim();
-      const mt=(''+row[ci.mes]).trim().slice(0,3).toLowerCase();const mi=MESES.findIndex(m=>m.toLowerCase()===mt);if(mi<0)continue;
-      let area=DB.areas.find(a=>a.faena===f&&a.name.toLowerCase()===aname.toLowerCase());
-      if(!area){const id=uid('a');area={id:id,faena:f,tipo:'mina',name:aname};DB.areas.push(area);DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};await rest('mantos_areas','POST',{id:id,faena:f,tipo:'mina',name:aname});created++;}
-      const c=DB.costs[area.id];if(ci.bud>=0&&row[ci.bud]!==''&&row[ci.bud]!=null)c.budget[mi]=Number(row[ci.bud])||0;
-      if(ci.real>=0&&row[ci.real]!==''&&row[ci.real]!=null)c.real[mi]=Number(row[ci.real])||0;
-      ups.push({area_id:area.id,month:mi,budget:c.budget[mi],real:c.real[mi]});count++;}
-    if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');render();toast('Importado: '+count+' filas · '+created+' áreas nuevas');
-  }catch(err){console.error(err);toast('Error: '+err.message);}};reader.readAsArrayBuffer(file);}
+function detectAreaCols(head){
+  // Columna Área explícita (Chancado, Sulfuro, Óxido…)
+  let areaC=head.findIndex(h=>h==='área'||h==='area'||h.indexOf('área dos')>=0||/^(área|area)\b/.test(h));
+  // Nombre de CECO (Centro de coste2 / Nombre Ceco) como respaldo cuando Área viene vacía (típico en Mina)
+  let cecoC=head.findIndex(h=>/coste\s*2|coste2/.test(h)||h.indexOf('nombre ceco')>=0||h.indexOf('centro de coste2')>=0);
+  if(cecoC<0)cecoC=head.findIndex(h=>h.indexOf('centro de coste')>=0&&h.indexOf('cuenta')<0);
+  if(areaC<0)areaC=findCol(head,['área','area']);
+  return {areaC,cecoC};}
+let IMPORT=null;
+function parseWorkbook(rows){
+  let hr=0;for(let k=0;k<Math.min(10,rows.length);k++){const hh=(rows[k]||[]).map(x=>(''+x).toLowerCase());if(findCol(hh,COLSYN.mes)>=0&&(findCol(hh,COLSYN.real)>=0||findCol(hh,COLSYN.bud)>=0)){hr=k;break;}}
+  const head=(rows[hr]||[]).map(h=>(''+h).toLowerCase().trim());const rawHead=(rows[hr]||[]).map(h=>(''+h).trim());
+  const mesC=findCol(head,COLSYN.mes),realC=findCol(head,COLSYN.real),budC=findCol(head,COLSYN.bud);
+  const ac=detectAreaCols(head),areaC=ac.areaC,cecoC=ac.cecoC;
+  const col=i=>(i>=0&&rawHead[i]?rawHead[i]:'—');
+  if(mesC<0||(areaC<0&&cecoC<0))return {ok:false,reason:'No encontré columnas de <b>Mes</b> y <b>Área/Centro de Coste</b>. Revisa que la planilla tenga encabezados.'};
+  if(realC<0&&budC<0)return {ok:false,reason:'No encontré columnas de <b>Real</b> ni <b>Budget/OL</b>.'};
+  const agg={};let maxv=0,nrows=0;
+  for(let i=hr+1;i<rows.length;i++){const row=rows[i];if(!row)continue;const m=monthIndex(row[mesC]);if(m<0)continue;
+    let g='';if(areaC>=0&&row[areaC]!=null)g=(''+row[areaC]).trim();if(!g&&cecoC>=0&&row[cecoC]!=null)g=(''+row[cecoC]).trim();if(!g)g='Sin área';
+    if(/^total|etiquetas|suma de|general/i.test(g))continue;
+    if(!agg[g])agg[g]={b:Array(12).fill(0),r:Array(12).fill(0),hb:Array(12).fill(false),hr:Array(12).fill(false)};
+    if(budC>=0){const bv=parseNum(row[budC]);if(bv!=null){agg[g].b[m]+=bv;agg[g].hb[m]=true;maxv=Math.max(maxv,Math.abs(bv));}}
+    if(realC>=0){const rv=parseNum(row[realC]);if(rv!=null){agg[g].r[m]+=rv;agg[g].hr[m]=true;maxv=Math.max(maxv,Math.abs(rv));}}
+    nrows++;}
+  const factor=maxv>=100000?0.001:1;const names=Object.keys(agg);let cells=0;
+  names.forEach(g=>{for(let m=0;m<12;m++)if(agg[g].hb[m]||agg[g].hr[m])cells++;});
+  const sample=names.map(g=>{let y=0;for(let m=0;m<12;m++)if(agg[g].hr[m])y+=agg[g].r[m];return {n:g,ytd:y*factor};}).sort((x,y)=>y.ytd-x.ytd).slice(0,6);
+  return {ok:true,agg,factor,unidad:factor===1?'kUSD':'USD → kUSD',nrows,nAreas:names.length,nCells:cells,sample,
+    cols:{mes:col(mesC),area:col(areaC>=0?areaC:cecoC),real:col(realC),bud:col(budC)},realC,budC};
+}
+function onImportFile(inp){const f=inp.files[0];if(f)readImportFile(f);}
+function onImportDrop(e){const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)readImportFile(f);}
+function readImportFile(file){const r=new FileReader();r.onload=function(e){try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});IMPORT={name:file.name,parsed:parseWorkbook(rows)};renderImportPreview();}catch(err){toast('Error al leer: '+err.message);}};r.readAsArrayBuffer(file);}
+function renderImportPreview(){const el=$('#importPreview');if(!el)return;if(!IMPORT){el.innerHTML='';return;}const p=IMPORT.parsed;
+  if(!p.ok){el.innerHTML='<div class="banner" style="border-color:rgba(231,76,60,.35);background:rgba(231,76,60,.06);margin-top:12px">'+ic('doc',18)+'<div>'+p.reason+'</div></div>';return;}
+  const mc=(k,v,miss)=>'<div class="mapcell'+(miss?' miss':'')+'"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';
+  const samp=p.sample.map(s=>'<div class="barrow"><div class="top"><b>'+s.n+'</b><span class="n">'+fmtK(s.ytd)+'</span></div></div>').join('');
+  el.innerHTML='<div class="card" style="margin-top:14px"><span class="pill-ok">'+ic('check',14)+' '+IMPORT.name+' · '+p.nrows+' filas leídas</span>'+
+    '<div class="mapgrid">'+mc('Mes',p.cols.mes,false)+mc('Área / CECO',p.cols.area,false)+mc('Real',p.cols.real,p.realC<0)+mc('Budget / OL',p.cols.bud,p.budC<0)+'</div>'+
+    '<div class="statwrap" style="margin:4px 0 6px"><div class="ministat"><div class="l">Áreas detectadas</div><div class="v">'+p.nAreas+'</div></div><div class="ministat"><div class="l">Celdas de costo</div><div class="v">'+p.nCells+'</div></div><div class="ministat"><div class="l">Unidad</div><div class="v" style="font-size:15px">'+p.unidad+'</div></div></div>'+
+    '<div class="sectit"><span class="lft">Vista previa · top áreas (YTD Real)</span></div><div class="card" style="background:#fff">'+(samp||'<div class="empty">Sin datos numéricos</div>')+'</div>'+
+    '<div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="confirmImport()">'+ic('check',16)+' Confirmar y cargar a la nube</button><button class="btn ghost" style="width:auto" onclick="IMPORT=null;renderImportPreview()">Cancelar</button></div></div>';
+}
+async function confirmImport(){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPORT.parsed;const f=curFaena();const tipo=($('#xls_tipo')&&$('#xls_tipo').value)||'mina';
+  const ups=[];let created=0,groups=0;
+  for(const g of Object.keys(p.agg)){groups++;let area=DB.areas.find(a=>a.faena===f&&a.tipo===tipo&&a.name.toLowerCase()===g.toLowerCase());
+    if(!area){const id=uid('a');area={id:id,faena:f,tipo:tipo,name:g};DB.areas.push(area);DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};try{await rest('mantos_areas','POST',{id:id,faena:f,tipo:tipo,name:g});}catch(e){}created++;}
+    const c=DB.costs[area.id];const A=p.agg[g];
+    for(let m=0;m<12;m++){let ch=false;if(A.hb[m]){c.budget[m]=A.b[m]*p.factor;ch=true;}if(A.hr[m]){c.real[m]=A.r[m]*p.factor;ch=true;}if(ch)ups.push({area_id:area.id,month:m,budget:c.budget[m]||0,real:c.real[m]});}}
+  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;buildNav();render();toast('Cargado: '+groups+' áreas ('+created+' nuevas) · '+ups.length+' celdas');}catch(e){toast('Error: '+e.message);}}
 function cfgSubir(){const f=curFaena();const ars=areasOf(f);const opts=ars.map(a=>'<option value="'+a.id+'">'+a.name+' ('+(a.tipo==='mina'?'Mina':'Planta')+')</option>').join('');
   return '<p class="muted" style="line-height:1.6">Elige el área (existente o nueva), sube tu informe Excel y la plataforma lo convierte en dashboard asociado a esa área, en la nube.</p>'+
    '<div class="card"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('upload',16)+' Subir informe a un área</span></div>'+
    '<div class="field"><label>Área destino</label><select id="su_area" onchange="suToggle()">'+opts+'<option value="__new">+ Crear nueva área…</option></select></div>'+
    '<div id="su_newwrap" class="row2" style="display:none"><div class="field"><label>Nombre de la nueva área</label><input id="su_newname" placeholder="Ej: Espesadores"></div><div class="field"><label>Tipo</label><select id="su_newtipo"><option value="mina">Mina</option><option value="planta">Planta</option></select></div></div>'+
-   '<div class="banner">'+ic('doc',18)+'<div>El Excel debe traer columnas <b style="color:var(--copper2)">Mes</b> (Ene, Feb…), <b style="color:var(--copper2)">Budget</b> y <b style="color:var(--copper2)">Real</b>. No necesita columna Área: tú la eliges arriba.</div></div>'+
+   '<div class="banner">'+ic('doc',18)+'<div>Flexible: reconoce <b style="color:var(--copper2)">Mes</b> (Ene, Enero, 1, 01 o fecha), y montos como <b style="color:var(--copper2)">Budget</b> (presupuesto, ppto, plan) y <b style="color:var(--copper2)">Real</b> (ejecutado, gasto, actual), con $ o separadores de miles. No necesita columna Área: tú la eliges arriba.</div></div>'+
    '<input type="file" id="su_file" accept=".xlsx,.xls,.csv" style="margin:8px 0">'+
    '<button class="btn" style="width:auto" onclick="importToArea(\''+f+'\')">'+ic('upload',16)+' Subir y generar dashboard</button></div>';}
 function suToggle(){const v=$('#su_area').value;$('#su_newwrap').style.display=(v==='__new')?'grid':'none';}
@@ -571,14 +729,16 @@ function importToArea(f){const file=$('#su_file').files[0];if(!file)return toast
   if(areaId==='__new'){cName=$('#su_newname').value.trim();if(!cName)return toast('Escribe el nombre de la nueva área');cTipo=$('#su_newtipo').value;}
   const reader=new FileReader();
   reader.onload=async function(e){try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});
-    if(!rows.length)return toast('Planilla vacía');const head=rows[0].map(h=>(''+h).toLowerCase());
-    const mi=head.findIndex(h=>h.indexOf('mes')>=0);const bi=head.findIndex(h=>h.indexOf('budget')>=0||h.indexOf('presup')>=0);const ri=head.findIndex(h=>h.indexOf('real')>=0||h.indexOf('ejec')>=0);
-    if(mi<0)return toast('No se encontró la columna Mes');
+    if(!rows.length)return toast('Planilla vacía');
+    let hr=0;for(let k=0;k<Math.min(8,rows.length);k++){const hh=(rows[k]||[]).map(x=>(''+x).toLowerCase());if(findCol(hh,COLSYN.mes)>=0){hr=k;break;}}
+    const head=(rows[hr]||[]).map(h=>(''+h).toLowerCase().trim());
+    const mi=findCol(head,COLSYN.mes);const bi=findCol(head,COLSYN.bud);const ri=findCol(head,COLSYN.real);
+    if(mi<0)return toast('No encuentro la columna Mes. Revisa los encabezados.');
     if(areaId==='__new'){areaId=uid('a');DB.areas.push({id:areaId,faena:f,tipo:cTipo,name:cName});DB.costs[areaId]={budget:Array(12).fill(0),real:Array(12).fill(null)};await rest('mantos_areas','POST',{id:areaId,faena:f,tipo:cTipo,name:cName});}
     const c=DB.costs[areaId];const ups=[];let n=0;
-    for(let i=1;i<rows.length;i++){const row=rows[i];if(!row)continue;const mt=(''+row[mi]).trim().slice(0,3).toLowerCase();const m=MESES.findIndex(x=>x.toLowerCase()===mt);if(m<0)continue;
-      if(bi>=0&&row[bi]!==''&&row[bi]!=null)c.budget[m]=Number(row[bi])||0;
-      if(ri>=0&&row[ri]!==''&&row[ri]!=null)c.real[m]=Number(row[ri])||0;ups.push({area_id:areaId,month:m,budget:c.budget[m],real:c.real[m]});n++;}
+    for(let i=hr+1;i<rows.length;i++){const row=rows[i];if(!row)continue;const m=monthIndex(row[mi]);if(m<0)continue;
+      if(bi>=0){const bv=parseNum(row[bi]);if(bv!=null)c.budget[m]=bv;}
+      if(ri>=0){const rv=parseNum(row[ri]);if(rv!=null)c.real[m]=rv;}ups.push({area_id:areaId,month:m,budget:c.budget[m],real:c.real[m]});n++;}
     if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');
     const area=DB.areas.find(a=>a.id===areaId);CURRENT=area.tipo;EDIT_AREA[area.tipo]=areaId;buildNav();render();toast('Informe cargado a '+area.name+' · '+n+' meses');
   }catch(err){console.error(err);toast('Error: '+err.message);}};reader.readAsArrayBuffer(file);}
