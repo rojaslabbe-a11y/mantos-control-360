@@ -321,29 +321,35 @@ function faenaTotals(f,t){const ar=areasOf(f,t);let o={bAcum:0,rAcum:0,bAnual:0,
 function monthly(f,t){const ar=areasOf(f,t);const b=Array(12).fill(0),r=Array(12).fill(0);ar.forEach(a=>{const c=C(a.id);for(let m=0;m<12;m++){b[m]+=c.budget[m]||0;if(c.real[m]!=null)r[m]+=c.real[m];}});return{b:b,r:r.map((v,m)=>m<=MES_ACTUAL?v:null)};}
 
 /* ===== Gráfico SVG (sin librerías) ===== */
-function barChart(labels,budget,real){const W=Math.max(380,labels.length*46),H=200,base=H-22,top=14;
-  const vals=budget.concat(real.filter(x=>x!=null));const max=Math.max(1,...vals);const bw=(W-20)/labels.length;let s='';
-  for(let i=0;i<labels.length;i++){const x=10+i*bw;const bh=(budget[i]/max)*(base-top),rh=(real[i]!=null?(real[i]/max)*(base-top):0);
-    s+='<rect x="'+(x+bw*0.16)+'" y="'+(base-bh)+'" width="'+(bw*0.30)+'" height="'+bh+'" fill="rgba(91,140,179,.65)" rx="2"/>';
-    if(real[i]!=null)s+='<rect x="'+(x+bw*0.50)+'" y="'+(base-rh)+'" width="'+(bw*0.30)+'" height="'+rh+'" fill="#e27b2e" rx="2"/>';
-    s+='<text x="'+(x+bw*0.47)+'" y="'+(H-6)+'" fill="#90a4ba" font-size="9" text-anchor="middle">'+labels[i]+'</text>';}
-  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%">'+s+'</svg>'+
-    '<div style="display:flex;gap:16px;justify-content:center;font-size:11px;color:var(--muted);margin-top:6px"><span><span style="display:inline-block;width:10px;height:10px;background:rgba(91,140,179,.65);border-radius:2px"></span> Budget</span><span><span style="display:inline-block;width:10px;height:10px;background:#e27b2e;border-radius:2px"></span> Real</span></div>';}
+function niceMax(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;const nf=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;return nf*p;}
+function axisLbl(v){return v>=1000?(v/1000).toFixed(v>=10000?0:1)+'M':Math.round(v)+'K';}
+function barRect(x,y,w,h,fill){if(h<=0.5)return '';const r=Math.min(w/2,5);return '<path d="M'+x.toFixed(1)+' '+(y+h).toFixed(1)+' L'+x.toFixed(1)+' '+(y+r).toFixed(1)+' Q'+x.toFixed(1)+' '+y.toFixed(1)+' '+(x+r).toFixed(1)+' '+y.toFixed(1)+' L'+(x+w-r).toFixed(1)+' '+y.toFixed(1)+' Q'+(x+w).toFixed(1)+' '+y.toFixed(1)+' '+(x+w).toFixed(1)+' '+(y+r).toFixed(1)+' L'+(x+w).toFixed(1)+' '+(y+h).toFixed(1)+' Z" fill="'+fill+'"/>';}
+function chartLegend(items){return '<div style="display:flex;gap:18px;justify-content:center;font-size:11px;color:var(--muted);margin-top:8px;font-weight:600">'+items.map(it=>'<span><span style="display:inline-block;width:11px;height:11px;background:'+it[1]+';border-radius:3px;vertical-align:-1px;margin-right:5px"></span>'+it[0]+'</span>').join('')+'</div>';}
+function sparkline(arr,color){const pts=arr.filter(x=>x!=null);if(pts.length<2)return '';const W=130,H=34,mx=Math.max.apply(null,pts),mn=Math.min.apply(null,[0].concat(pts)),rng=(mx-mn)||1;const X=i=>i/(pts.length-1)*W,Y=val=>H-3-((val-mn)/rng)*(H-7);let d='';pts.forEach((val,i)=>{d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(val).toFixed(1)+' ';});return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:32px;margin-top:10px"><path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="'+X(pts.length-1).toFixed(1)+'" cy="'+Y(pts[pts.length-1]).toFixed(1)+'" r="2.6" fill="'+color+'"/></svg>';}
+function barChart(labels,budget,real){const W=640,H=240,padL=46,padR=14,padT=14,padB=30,plotW=W-padL-padR,plotH=H-padT-padB,base=padT+plotH;
+  const vals=budget.map(v=>Math.max(0,v||0)).concat(real.filter(v=>v!=null).map(v=>Math.max(0,v)));const max=niceMax(Math.max(1,...vals));
+  const n=labels.length,slot=plotW/n,bw=Math.min(18,slot*0.30);
+  let grid='';for(let i=0;i<=4;i++){const y=padT+plotH*(1-i/4);grid+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(18,44,82,.07)" stroke-width="1"/><text x="'+(padL-9)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#9aabbf">'+axisLbl(max*i/4)+'</text>';}
+  let bars='';for(let i=0;i<n;i++){const cx=padL+slot*i+slot/2;const bh=Math.max(0,budget[i]||0)/max*plotH,rh=(real[i]!=null?Math.max(0,real[i])/max*plotH:0);
+    bars+=barRect(cx-bw-1.5,base-bh,bw,bh,'url(#gBud)');if(real[i]!=null)bars+=barRect(cx+1.5,base-rh,bw,rh,'url(#gReal)');
+    bars+='<text x="'+cx.toFixed(1)+'" y="'+(H-10)+'" text-anchor="middle" font-size="9.5" fill="#5d738c" font-weight="600">'+labels[i]+'</text>';}
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><defs><linearGradient id="gBud" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7AA6CC"/><stop offset="1" stop-color="#4C76A0"/></linearGradient><linearGradient id="gReal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2A059"/><stop offset="1" stop-color="#D66E25"/></linearGradient></defs>'+grid+bars+'</svg>'+chartLegend([['Budget','#4C76A0'],['Real','#E27B2E']]);}
 function cumBudget(arr){let a=0;return arr.map(v=>(a+=(v||0)));}
 function cumReal(arr){let a=0,stop=false;return arr.map(v=>{if(stop||v==null){stop=true;return null;}a+=v;return a;});}
-function lineChart(labels,sA,sB,labA,labB){const W=Math.max(380,labels.length*46),H=200,padL=10,padR=10,top=16,base=H-22;
-  const all=sA.concat(sB).filter(x=>x!=null);const max=Math.max(1,...all);
-  const X=i=>padL+(W-padL-padR)*(labels.length<=1?0:i/(labels.length-1));const Y=v=>base-(v/max)*(base-top);
-  const line=arr=>{let d='';arr.forEach((v,i)=>{if(v==null)return;d+=(d?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' ';});return d;};
+function lineChart(labels,sA,sB,labA,labB){const W=640,H=240,padL=46,padR=14,padT=14,padB=30,plotW=W-padL-padR,plotH=H-padT-padB,base=padT+plotH;
+  const all=sA.concat(sB).filter(v=>v!=null);const max=niceMax(Math.max(1,...all));const n=labels.length;
+  const X=i=>padL+plotW*(n<=1?0:i/(n-1));const Y=v=>base-(v/max)*plotH;
+  let grid='';for(let i=0;i<=4;i++){const y=padT+plotH*(1-i/4);grid+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(18,44,82,.07)" stroke-width="1"/><text x="'+(padL-9)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#9aabbf">'+axisLbl(max*i/4)+'</text>';}
+  const path=arr=>{let d='';arr.forEach((v,i)=>{if(v==null)return;d+=(d?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' ';});return d;};
   const bDef=sB.map((v,i)=>({v,i})).filter(o=>o.v!=null);let area='';
   if(bDef.length>1)area='M'+X(bDef[0].i).toFixed(1)+' '+base+' '+bDef.map(o=>'L'+X(o.i).toFixed(1)+' '+Y(o.v).toFixed(1)).join(' ')+' L'+X(bDef[bDef.length-1].i).toFixed(1)+' '+base+' Z';
-  let dots='';bDef.forEach(o=>{dots+='<circle cx="'+X(o.i).toFixed(1)+'" cy="'+Y(o.v).toFixed(1)+'" r="2.5" fill="#e27b2e"/>';});
-  let lbl='';labels.forEach((l,i)=>{lbl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" fill="#90a4ba" font-size="9" text-anchor="middle">'+l+'</text>';});
-  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%">'+
-    (area?'<path d="'+area+'" fill="rgba(226,123,46,.12)"/>':'')+
-    '<path d="'+line(sA)+'" fill="none" stroke="rgba(91,140,179,.9)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>'+
-    '<path d="'+line(sB)+'" fill="none" stroke="#e27b2e" stroke-width="2.4" stroke-linejoin="round"/>'+dots+lbl+'</svg>'+
-    '<div style="display:flex;gap:16px;justify-content:center;font-size:11px;color:var(--muted);margin-top:6px"><span><span style="display:inline-block;width:12px;height:3px;background:rgba(91,140,179,.9);border-radius:2px;vertical-align:middle"></span> '+(labA||'Budget')+'</span><span><span style="display:inline-block;width:12px;height:3px;background:#e27b2e;border-radius:2px;vertical-align:middle"></span> '+(labB||'Real')+'</span></div>';}
+  let dots='';bDef.forEach(o=>{dots+='<circle cx="'+X(o.i).toFixed(1)+'" cy="'+Y(o.v).toFixed(1)+'" r="3" fill="#fff" stroke="#E27B2E" stroke-width="2"/>';});
+  let lbl='';labels.forEach((l,i)=>{lbl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-10)+'" fill="#5d738c" font-size="9.5" font-weight="600" text-anchor="middle">'+l+'</text>';});
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><defs><linearGradient id="gArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(226,123,46,.22)"/><stop offset="1" stop-color="rgba(226,123,46,0)"/></linearGradient></defs>'+grid+
+    (area?'<path d="'+area+'" fill="url(#gArea)"/>':'')+
+    '<path d="'+path(sA)+'" fill="none" stroke="#4C76A0" stroke-width="2.4" stroke-dasharray="6 4" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<path d="'+path(sB)+'" fill="none" stroke="#E27B2E" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>'+dots+lbl+'</svg>'+
+    chartLegend([[(labA||'Budget'),'#4C76A0'],[(labB||'Real'),'#E27B2E']]);}
 
 /* ===== AUTH ===== */
 async function doLogin(){const u=$('#lg_user').value.trim(),p=$('#lg_pass').value;if(!u||!p){$('#lg_err').textContent='Ingresa usuario y contraseña.';return;}
@@ -420,7 +426,7 @@ function viewCierre(){const f=curFaena();const m=Math.min(11,Math.max(0,CIERRE_M
    '<div class="sectit"><span class="lft">Acumulado YTD · Real vs Budget</span><span class="pill">US$K</span></div><div class="chartbox">'+lineChart(labels,sb,sr,'Budget acum.','Real acum.')+'</div>'+
    '<div class="sectit"><span class="lft">Semáforo por área · '+MESES[m]+'</span><span class="pill">'+areas.length+' áreas</span></div>'+(sem||'<div class="empty">Sin datos del mes</div>')+
    '<div class="sectit"><span class="lft">Hallazgos clave</span></div><div class="card"><ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px">'+hall+'</ul></div>';}
-function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';const tot=faenaTotals(f),mi=faenaTotals(f,'mina'),pl=faenaTotals(f,'planta');const s=monthly(f,null);
+function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';const tot=faenaTotals(f),mi=faenaTotals(f,'mina'),pl=faenaTotals(f,'planta');const s=monthly(f,null);const sm=monthly(f,'mina'),sp=monthly(f,'planta');
   const dev=(tot.dev>0?'+':'')+(tot.dev*100).toFixed(1)+'%';
   let ar=areasOf(f);let dist=ar.map(a=>{const t=areaTotals(a.id);return {n:a.name,v:t.rAcum};}).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);const mx=Math.max(1,...dist.map(d=>d.v));
   return '<div class="crumb">'+ic('dashboard',13)+' Faena · '+fn+'</div><h2 class="title">Dashboard General</h2>'+
@@ -429,8 +435,8 @@ function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{})
    '<div class="ministat"><div class="l">Budget acumulado</div><div class="v">'+fmtM(tot.bAcum)+'</div></div>'+
    '<div class="ministat"><div class="l">Desviación</div><div class="v" style="color:'+(tot.dev>0?'var(--bad)':'var(--ok)')+'">'+dev+'</div></div>'+
    '<div class="ministat"><div class="l">Proyección año</div><div class="v">'+fmtM(tot.proy)+'</div></div></div>'+
-   '<div class="grid g2" style="margin-top:13px"><div class="card kpi accent"><div class="lbl">'+ic('mina',14)+' Costo Mina</div><div class="val">'+fmtM(mi.rAcum)+'</div><span class="delta '+(mi.dev>0?'up':'down')+'">'+(mi.dev>0?'+':'')+(mi.dev*100).toFixed(1)+'% vs budget</span></div>'+
-   '<div class="card kpi accent"><div class="lbl">'+ic('planta',14)+' Costo Planta</div><div class="val">'+fmtM(pl.rAcum)+'</div><span class="delta '+(pl.dev>0?'up':'down')+'">'+(pl.dev>0?'+':'')+(pl.dev*100).toFixed(1)+'% vs budget</span></div></div>'+
+   '<div class="grid g2" style="margin-top:13px"><div class="card kpi accent"><div class="lbl">'+ic('mina',14)+' Costo Mina</div><div class="val">'+fmtM(mi.rAcum)+'</div><span class="delta '+(mi.dev>0?'up':'down')+'">'+(mi.dev>0?'+':'')+(mi.dev*100).toFixed(1)+'% vs budget</span>'+sparkline(sm.r,'#E27B2E')+'</div>'+
+   '<div class="card kpi accent"><div class="lbl">'+ic('planta',14)+' Costo Planta</div><div class="val">'+fmtM(pl.rAcum)+'</div><span class="delta '+(pl.dev>0?'up':'down')+'">'+(pl.dev>0?'+':'')+(pl.dev*100).toFixed(1)+'% vs budget</span>'+sparkline(sp.r,'#4C76A0')+'</div></div>'+
    '<div class="sectit"><span class="lft">Real vs Budget · '+ANIO+'</span><span class="pill">US$K / mes</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r)+'</div>'+
    '<div class="sectit"><span class="lft">Costo acumulado · Real vs Budget</span><span class="pill">US$K acumulado</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(s.b),cumReal(s.r),'Budget acum.','Real acum.')+'</div>'+
    '<div class="sectit"><span class="lft">Distribución de costo por área</span></div><div class="card">'+(dist.length?dist.map(d=>'<div class="barrow"><div class="top"><b>'+d.n+'</b><span class="n">'+fmtK(d.v)+'</span></div><div class="track"><div class="fill" style="width:'+(d.v/mx*100)+'%"></div></div></div>').join(''):'<div class="empty">Sin datos</div>')+'</div>'+
