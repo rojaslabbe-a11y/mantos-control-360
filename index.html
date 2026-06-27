@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Mantos 360">
 <title>Mantos Control 360 · Capstone Copper</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2/dist/apexcharts.min.js"></script>
 <style>
 :root{
   --bg:#08111c; --bg2:#0c1a2b; --surface:#11253b; --surface2:#16314d;
@@ -321,35 +322,41 @@ function faenaTotals(f,t){const ar=areasOf(f,t);let o={bAcum:0,rAcum:0,bAnual:0,
 function monthly(f,t){const ar=areasOf(f,t);const b=Array(12).fill(0),r=Array(12).fill(0);ar.forEach(a=>{const c=C(a.id);for(let m=0;m<12;m++){b[m]+=c.budget[m]||0;if(c.real[m]!=null)r[m]+=c.real[m];}});return{b:b,r:r.map((v,m)=>m<=MES_ACTUAL?v:null)};}
 
 /* ===== Gráfico SVG (sin librerías) ===== */
-function niceMax(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;const nf=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;return nf*p;}
-function axisLbl(v){return v>=1000?(v/1000).toFixed(v>=10000?0:1)+'M':Math.round(v)+'K';}
-function barRect(x,y,w,h,fill){if(h<=0.5)return '';const r=Math.min(w/2,5);return '<path d="M'+x.toFixed(1)+' '+(y+h).toFixed(1)+' L'+x.toFixed(1)+' '+(y+r).toFixed(1)+' Q'+x.toFixed(1)+' '+y.toFixed(1)+' '+(x+r).toFixed(1)+' '+y.toFixed(1)+' L'+(x+w-r).toFixed(1)+' '+y.toFixed(1)+' Q'+(x+w).toFixed(1)+' '+y.toFixed(1)+' '+(x+w).toFixed(1)+' '+(y+r).toFixed(1)+' L'+(x+w).toFixed(1)+' '+(y+h).toFixed(1)+' Z" fill="'+fill+'"/>';}
-function chartLegend(items){return '<div style="display:flex;gap:18px;justify-content:center;font-size:11px;color:var(--muted);margin-top:8px;font-weight:600">'+items.map(it=>'<span><span style="display:inline-block;width:11px;height:11px;background:'+it[1]+';border-radius:3px;vertical-align:-1px;margin-right:5px"></span>'+it[0]+'</span>').join('')+'</div>';}
-function sparkline(arr,color){const pts=arr.filter(x=>x!=null);if(pts.length<2)return '';const W=130,H=34,mx=Math.max.apply(null,pts),mn=Math.min.apply(null,[0].concat(pts)),rng=(mx-mn)||1;const X=i=>i/(pts.length-1)*W,Y=val=>H-3-((val-mn)/rng)*(H-7);let d='';pts.forEach((val,i)=>{d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(val).toFixed(1)+' ';});return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:32px;margin-top:10px"><path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="'+X(pts.length-1).toFixed(1)+'" cy="'+Y(pts[pts.length-1]).toFixed(1)+'" r="2.6" fill="'+color+'"/></svg>';}
-function barChart(labels,budget,real){const W=640,H=240,padL=46,padR=14,padT=14,padB=30,plotW=W-padL-padR,plotH=H-padT-padB,base=padT+plotH;
-  const vals=budget.map(v=>Math.max(0,v||0)).concat(real.filter(v=>v!=null).map(v=>Math.max(0,v)));const max=niceMax(Math.max(1,...vals));
-  const n=labels.length,slot=plotW/n,bw=Math.min(18,slot*0.30);
-  let grid='';for(let i=0;i<=4;i++){const y=padT+plotH*(1-i/4);grid+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(18,44,82,.07)" stroke-width="1"/><text x="'+(padL-9)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#9aabbf">'+axisLbl(max*i/4)+'</text>';}
-  let bars='';for(let i=0;i<n;i++){const cx=padL+slot*i+slot/2;const bh=Math.max(0,budget[i]||0)/max*plotH,rh=(real[i]!=null?Math.max(0,real[i])/max*plotH:0);
-    bars+=barRect(cx-bw-1.5,base-bh,bw,bh,'url(#gBud)');if(real[i]!=null)bars+=barRect(cx+1.5,base-rh,bw,rh,'url(#gReal)');
-    bars+='<text x="'+cx.toFixed(1)+'" y="'+(H-10)+'" text-anchor="middle" font-size="9.5" fill="#5d738c" font-weight="600">'+labels[i]+'</text>';}
-  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><defs><linearGradient id="gBud" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7AA6CC"/><stop offset="1" stop-color="#4C76A0"/></linearGradient><linearGradient id="gReal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2A059"/><stop offset="1" stop-color="#D66E25"/></linearGradient></defs>'+grid+bars+'</svg>'+chartLegend([['Budget','#4C76A0'],['Real','#E27B2E']]);}
+let CHART_Q=[],CHART_INST=[],CHART_N=0;
+function chartId(){return 'cx'+(++CHART_N);}
+function queueChart(id,opts){CHART_Q.push({id:id,opts:opts});}
+function mountCharts(){
+  if(!window.ApexCharts){window._cmRetry=(window._cmRetry||0)+1;if(window._cmRetry<16){clearTimeout(window._cmT);window._cmT=setTimeout(mountCharts,300);}return;}
+  window._cmRetry=0;
+  CHART_INST.forEach(function(c){try{c.destroy();}catch(e){}});CHART_INST=[];const q=CHART_Q;CHART_Q=[];
+  q.forEach(function(it){const el=document.getElementById(it.id);if(!el)return;try{const ch=new ApexCharts(el,it.opts);ch.render();CHART_INST.push(ch);}catch(e){el.innerHTML='<div class="empty">Gráfico no disponible</div>';}});}
+function fmtAxisUSD(v){v=v||0;const a=Math.abs(v);return (v<0?'-':'')+'US$'+(a>=1000?(a/1000).toFixed(a>=10000?0:1)+'M':Math.round(a)+'K');}
+function tipUSD(v){return 'US$'+Math.round(v||0).toLocaleString('es-CL')+'K';}
+function sparkline(arr,color){const pts=arr.filter(x=>x!=null);if(pts.length<2)return '';const id=chartId();
+  queueChart(id,{chart:{type:'area',height:46,sparkline:{enabled:true},animations:{enabled:true,speed:500}},series:[{name:'Real',data:pts.map(function(v){return Math.round(v);})}],stroke:{curve:'smooth',width:2.2},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.45,opacityTo:0}},colors:[color],tooltip:{enabled:false}});
+  return '<div id="'+id+'" style="margin-top:10px;height:46px"></div>';}
+function barChart(labels,budget,real){const id=chartId();
+  queueChart(id,{chart:{type:'bar',height:'100%',toolbar:{show:false},fontFamily:'inherit',animations:{easing:'easeinout',speed:650}},
+    series:[{name:'Budget',data:budget.map(function(v){return Math.round(v||0);})},{name:'Real',data:real.map(function(v){return v==null?null:Math.round(v);})}],
+    colors:['#5B86B0','#E27B2E'],plotOptions:{bar:{columnWidth:'56%',borderRadius:5,borderRadiusApplication:'end'}},
+    fill:{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:.2,opacityFrom:1,opacityTo:.82}},dataLabels:{enabled:false},
+    grid:{borderColor:'rgba(18,44,82,.08)',strokeDashArray:4,padding:{left:6,right:6}},
+    xaxis:{categories:labels,labels:{style:{colors:'#7a8aa0',fontSize:'11px',fontWeight:600}},axisBorder:{show:false},axisTicks:{show:false}},
+    yaxis:{labels:{formatter:fmtAxisUSD,style:{colors:'#9aabbf',fontSize:'10px'}}},
+    legend:{position:'top',horizontalAlign:'right',fontSize:'12px',markers:{radius:4},labels:{colors:'#5d738c'}},tooltip:{y:{formatter:tipUSD}}});
+  return '<div id="'+id+'" style="width:100%;height:100%"></div>';}
 function cumBudget(arr){let a=0;return arr.map(v=>(a+=(v||0)));}
 function cumReal(arr){let a=0,stop=false;return arr.map(v=>{if(stop||v==null){stop=true;return null;}a+=v;return a;});}
-function lineChart(labels,sA,sB,labA,labB){const W=640,H=240,padL=46,padR=14,padT=14,padB=30,plotW=W-padL-padR,plotH=H-padT-padB,base=padT+plotH;
-  const all=sA.concat(sB).filter(v=>v!=null);const max=niceMax(Math.max(1,...all));const n=labels.length;
-  const X=i=>padL+plotW*(n<=1?0:i/(n-1));const Y=v=>base-(v/max)*plotH;
-  let grid='';for(let i=0;i<=4;i++){const y=padT+plotH*(1-i/4);grid+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(18,44,82,.07)" stroke-width="1"/><text x="'+(padL-9)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#9aabbf">'+axisLbl(max*i/4)+'</text>';}
-  const path=arr=>{let d='';arr.forEach((v,i)=>{if(v==null)return;d+=(d?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' ';});return d;};
-  const bDef=sB.map((v,i)=>({v,i})).filter(o=>o.v!=null);let area='';
-  if(bDef.length>1)area='M'+X(bDef[0].i).toFixed(1)+' '+base+' '+bDef.map(o=>'L'+X(o.i).toFixed(1)+' '+Y(o.v).toFixed(1)).join(' ')+' L'+X(bDef[bDef.length-1].i).toFixed(1)+' '+base+' Z';
-  let dots='';bDef.forEach(o=>{dots+='<circle cx="'+X(o.i).toFixed(1)+'" cy="'+Y(o.v).toFixed(1)+'" r="3" fill="#fff" stroke="#E27B2E" stroke-width="2"/>';});
-  let lbl='';labels.forEach((l,i)=>{lbl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-10)+'" fill="#5d738c" font-size="9.5" font-weight="600" text-anchor="middle">'+l+'</text>';});
-  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><defs><linearGradient id="gArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(226,123,46,.22)"/><stop offset="1" stop-color="rgba(226,123,46,0)"/></linearGradient></defs>'+grid+
-    (area?'<path d="'+area+'" fill="url(#gArea)"/>':'')+
-    '<path d="'+path(sA)+'" fill="none" stroke="#4C76A0" stroke-width="2.4" stroke-dasharray="6 4" stroke-linejoin="round" stroke-linecap="round"/>'+
-    '<path d="'+path(sB)+'" fill="none" stroke="#E27B2E" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>'+dots+lbl+'</svg>'+
-    chartLegend([[(labA||'Budget'),'#4C76A0'],[(labB||'Real'),'#E27B2E']]);}
+function lineChart(labels,sA,sB,labA,labB){const id=chartId();
+  queueChart(id,{chart:{type:'area',height:'100%',toolbar:{show:false},fontFamily:'inherit',animations:{speed:750}},
+    series:[{name:labA||'Budget',data:sA.map(function(v){return v==null?null:Math.round(v);})},{name:labB||'Real',data:sB.map(function(v){return v==null?null:Math.round(v);})}],
+    colors:['#5B86B0','#E27B2E'],stroke:{curve:'smooth',width:[2.5,3.2],dashArray:[5,0]},
+    fill:{type:['solid','gradient'],opacity:[0,.85],gradient:{shadeIntensity:1,opacityFrom:.32,opacityTo:0,stops:[0,100]}},
+    markers:{size:0,hover:{size:5}},dataLabels:{enabled:false},grid:{borderColor:'rgba(18,44,82,.08)',strokeDashArray:4},
+    xaxis:{categories:labels,labels:{style:{colors:'#7a8aa0',fontSize:'11px',fontWeight:600}},axisBorder:{show:false},axisTicks:{show:false}},
+    yaxis:{labels:{formatter:fmtAxisUSD,style:{colors:'#9aabbf',fontSize:'10px'}}},
+    legend:{position:'top',horizontalAlign:'right',fontSize:'12px',markers:{radius:4},labels:{colors:'#5d738c'}},tooltip:{y:{formatter:tipUSD}}});
+  return '<div id="'+id+'" style="width:100%;height:100%"></div>';}
 
 /* ===== AUTH ===== */
 async function doLogin(){const u=$('#lg_user').value.trim(),p=$('#lg_pass').value;if(!u||!p){$('#lg_err').textContent='Ingresa usuario y contraseña.';return;}
@@ -393,7 +400,7 @@ function go(m){if(!can(m))return;CURRENT=m;buildNav();render();toggleSidebar(fal
 function render(){if(!SESSION)return;$('#tb_name').textContent=SESSION.name;$('#tb_role').textContent=(roleOf(SESSION)||{}).name||'';$('#tbTitle').textContent=modName(CURRENT);
   const cm=(DB.modules||[]).find(m=>m.id===CURRENT);
   const fns={dashboard:viewDashboard,cierre:viewCierre,mina:function(){return viewCostos('mina');},planta:function(){return viewCostos('planta');},budget:viewBudget,informes:viewInformes,proyeccion:viewProyeccion,usuarios:viewUsuarios,claves:viewClaves,config:viewConfig};
-  $('#viewport').innerHTML=cm?viewCustom(cm):((fns[CURRENT]||viewDashboard)());}
+  CHART_Q=[];$('#viewport').innerHTML=cm?viewCustom(cm):((fns[CURRENT]||viewDashboard)());mountCharts();}
 
 /* ===== Vistas ===== */
 /* ===== Cierre de Mes (dashboard ejecutivo automático) ===== */
@@ -750,8 +757,8 @@ function importToArea(f){const file=$('#su_file').files[0];if(!file)return toast
   }catch(err){console.error(err);toast('Error: '+err.message);}};reader.readAsArrayBuffer(file);}
 
 /* ===== Modal ===== */
-function modal(h){$('#modalRoot').innerHTML='<div class="modal" onclick="if(event.target===this)closeModal()"><div class="sheet">'+h+'</div></div>';}
-function modalWide(h){$('#modalRoot').innerHTML='<div class="modal" onclick="if(event.target===this)closeModal()"><div class="sheet wide">'+h+'</div></div>';}
+function modal(h){$('#modalRoot').innerHTML='<div class="modal" onclick="if(event.target===this)closeModal()"><div class="sheet">'+h+'</div></div>';mountCharts();}
+function modalWide(h){$('#modalRoot').innerHTML='<div class="modal" onclick="if(event.target===this)closeModal()"><div class="sheet wide">'+h+'</div></div>';mountCharts();}
 function closeModal(){$('#modalRoot').innerHTML='';}
 
 /* ===== Icono de app (pantalla de inicio) ===== */
