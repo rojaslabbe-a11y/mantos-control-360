@@ -483,13 +483,21 @@ function exportCierrePPT(){
   var P=new PptxGenJS();P.layout='LAYOUT_WIDE';P.author='Mantos Control 360';
   var NAVY='08192B',CARD='123354',CARD2='1A3F5F',COP='D05F27',COPL='F6AD55',TEAL='00A896',RED='E53E3E',TXT='CBD5E1',MUT='94A3B8',WT='FFFFFF';
   var footer=function(s){s.addText('CAPSTONE COPPER   ·   MANTOS BLANCOS   ·   GERENCIA MANTENCIÓN   ·   '+ANIO,{x:0.5,y:7.05,w:9.5,h:0.3,color:MUT,fontSize:8});s.addText('CONFIDENCIAL',{x:10.3,y:7.05,w:2.5,h:0.3,color:COP,fontSize:8,bold:true,align:'right'});};
-  // 1 · Portada
-  var s1=P.addSlide();s1.background={color:NAVY};s1.addShape('rect',{x:0,y:0,w:0.22,h:7.5,fill:{color:COP}});
-  s1.addText('CAPSTONE COPPER     ·     MANTOS BLANCOS',{x:0.85,y:1.5,w:11.5,h:0.4,color:COP,fontSize:15,bold:true,charSpacing:3});
-  s1.addText('CIERRE DE MES',{x:0.85,y:2.25,w:11.5,h:0.8,color:WT,fontSize:40,bold:true});
-  s1.addText(mFull.toUpperCase()+' '+ANIO,{x:0.85,y:3.15,w:11.5,h:1.1,color:COP,fontSize:58,bold:true});
-  s1.addText('Gerencia de Mantenimiento — '+fn,{x:0.85,y:4.5,w:11.5,h:0.5,color:TXT,fontSize:18});
-  s1.addText('CONTROL      ·      REDUCCIÓN      ·      RESULTADOS',{x:0.85,y:5.35,w:11.5,h:0.4,color:TEAL,fontSize:15,bold:true,charSpacing:2});
+  // 1 · Portada (diseño Capstone — dos paneles)
+  var s1=P.addSlide();s1.background={color:NAVY};
+  s1.addShape('rect',{x:0,y:0,w:0.22,h:7.5,fill:{color:COP}});
+  s1.addShape('rect',{x:0.22,y:0,w:5.7,h:7.5,fill:{color:'0E2C4A'}});
+  s1.addShape('oval',{x:9.7,y:-2.2,w:6.2,h:6.2,fill:{type:'none'},line:{color:COP,width:1.25}});
+  s1.addShape('oval',{x:-1.3,y:5.0,w:3.4,h:3.4,fill:{type:'none'},line:{color:TEAL,width:2.5}});
+  for(var ci=0;ci<4;ci++){s1.addShape('oval',{x:9.55+ci*0.78,y:0.45,w:0.62,h:0.62,fill:{color:COP},line:{color:'F2A059',width:1}});}
+  s1.addText('CAPSTONE COPPER   ·   MANTOS BLANCOS',{x:0.6,y:0.55,w:5.1,h:0.4,color:COP,fontSize:11,bold:true,charSpacing:2});
+  s1.addText('CIERRE MES',{x:0.55,y:1.55,w:5.25,h:0.8,color:WT,fontSize:38,bold:true});
+  s1.addText(mFull.toUpperCase(),{x:0.55,y:2.35,w:5.3,h:1.0,color:COP,fontSize:56,bold:true});
+  s1.addText('Gerencia de Mantenimiento — '+fn,{x:0.6,y:3.7,w:5.1,h:0.5,color:TEAL,fontSize:15});
+  s1.addText('MANTOS BLANCOS   '+ANIO,{x:0.6,y:4.3,w:5.1,h:0.4,color:MUT,fontSize:12,charSpacing:2});
+  s1.addText('CONTROL',{x:6.5,y:1.95,w:6.6,h:0.95,color:WT,fontSize:50,bold:true});
+  s1.addText('REDUCCIÓN',{x:6.5,y:2.85,w:6.6,h:0.95,color:COP,fontSize:50,bold:true});
+  s1.addText('RESULTADOS',{x:6.5,y:3.75,w:6.6,h:0.95,color:TEAL,fontSize:50,bold:true});
   footer(s1);
   // 2 · Dashboard ejecutivo
   var s2=P.addSlide();s2.background={color:NAVY};
