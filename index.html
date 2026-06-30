@@ -488,8 +488,8 @@ function buildCierrePPT(){
   var s1=P.addSlide();s1.background={color:NAVY};
   s1.addShape('rect',{x:0,y:0,w:0.22,h:7.5,fill:{color:COP}});
   s1.addShape('rect',{x:0.22,y:0,w:5.7,h:7.5,fill:{color:'0E2C4A'}});
-  s1.addShape('oval',{x:9.7,y:-2.2,w:6.2,h:6.2,fill:{type:'none'},line:{color:COP,width:1.25}});
-  s1.addShape('oval',{x:-1.3,y:5.0,w:3.4,h:3.4,fill:{type:'none'},line:{color:TEAL,width:2.5}});
+  s1.addShape('oval',{x:11.0,y:0.7,w:6.0,h:6.0,fill:{type:'none'},line:{color:COP,width:1.25}});
+  s1.addShape('oval',{x:0.15,y:5.4,w:3.3,h:3.3,fill:{type:'none'},line:{color:TEAL,width:2.5}});
   for(var ci=0;ci<4;ci++){s1.addShape('oval',{x:9.55+ci*0.78,y:0.45,w:0.62,h:0.62,fill:{color:COP},line:{color:'F2A059',width:1}});}
   s1.addText('CAPSTONE COPPER   ·   MANTOS BLANCOS',{x:0.6,y:0.55,w:5.1,h:0.4,color:COP,fontSize:11,bold:true,charSpacing:2});
   s1.addText('CIERRE MES',{x:0.55,y:1.55,w:5.25,h:0.8,color:WT,fontSize:38,bold:true});
@@ -535,7 +535,14 @@ function buildCierrePPT(){
   s5.addText('CONTROL.      REDUCCIÓN.      RESULTADOS.',{x:0,y:4.3,w:13.33,h:0.5,color:COP,fontSize:18,bold:true,align:'center',charSpacing:2});
   s5.addText('CAPSTONE COPPER CORP.   ·   TSX:CS   ·   CONFIDENCIAL   ·   '+ANIO,{x:0,y:6.9,w:13.33,h:0.3,color:MUT,fontSize:9,align:'center'});
   toast('Generando PPT…');
-  P.writeFile({fileName:'Cierre_'+fn.replace(/[^a-z0-9]+/gi,'_')+'_'+MESES[m]+'_'+ANIO+'.pptx'}).then(function(){toast('PPT exportado ✓');}).catch(function(e){toast('Error al exportar: '+e.message);});
+  var fname='Cierre_'+fn.replace(/[^a-z0-9]+/gi,'_')+'_'+MESES[m]+'_'+ANIO+'.pptx';
+  P.write({outputType:'base64'}).then(function(b64){
+    var bin=atob(b64),len=bin.length,arr=new Uint8Array(len);for(var i=0;i<len;i++)arr[i]=bin.charCodeAt(i);
+    var blob=new Blob([arr],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
+    var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=fname;document.body.appendChild(a);a.click();
+    setTimeout(function(){try{document.body.removeChild(a);URL.revokeObjectURL(url);}catch(e){}},200);
+    toast('PPT exportado ✓');
+  }).catch(function(e){toast('Error al exportar: '+e.message);});
 }
 function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';const tot=faenaTotals(f),mi=faenaTotals(f,'mina'),pl=faenaTotals(f,'planta');const s=monthly(f,null);const sm=monthly(f,'mina'),sp=monthly(f,'planta');
   const dev=(tot.dev>0?'+':'')+(tot.dev*100).toFixed(1)+'%';
