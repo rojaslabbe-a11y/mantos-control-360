@@ -13,6 +13,8 @@
 <title>Mantos Control 360 · Capstone Copper</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2/dist/apexcharts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
 <style>
 :root{
   --bg:#08111c; --bg2:#0c1a2b; --surface:#11253b; --surface2:#16314d;
@@ -280,7 +282,7 @@ const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','
 const MES_ACTUAL=5, ANIO=2026;
 
 /* ===== Estado ===== */
-let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos';
+let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
 
 /* ===== Helpers ===== */
 const $=(s,r)=>(r||document).querySelector(s);
@@ -313,7 +315,8 @@ function can(m){return perms().indexOf(m)>=0;}
 function canEdit(){const r=roleOf(SESSION);return !(r&&r.view_only);}
 function isAdmin(){const r=roleOf(SESSION);return !!(r&&(r.id==='r0'||(r.perms||[]).indexOf('config')>=0||(r.perms||[]).indexOf('usuarios')>=0));}
 function curFaena(){return $('#mineSel')?$('#mineSel').value:'mb';}
-function areasOf(f,t){return DB.areas.filter(a=>a.faena===f&&(!t||t==='all'||a.tipo===t));}
+function areasOf(f,t){return DB.areas.filter(a=>a.faena===f&&(!t||t==='all'||a.tipo===t)&&(!SCOPE||SCOPE.indexOf(a.id)>=0));}
+function scopeBanner(){if(!SCOPE||!SCOPE.length)return '';var names=SCOPE.map(function(id){var a=DB.areas.find(function(x){return x.id===id;});return a?a.name:null;}).filter(Boolean);if(!names.length)return '';return '<div class="banner" style="margin-bottom:12px">'+ic('shield',18)+'<div>Tu vista personalizada · <b style="color:var(--copper2)">'+names.join(' · ')+'</b></div></div>';}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function modName(id){return MODULES[id]?MODULES[id].name:(((DB.modules||[]).find(m=>m.id===id)||{}).name||'');}
 
@@ -326,12 +329,17 @@ function monthly(f,t){const ar=areasOf(f,t);const b=Array(12).fill(0),r=Array(12
 /* ===== Gráfico SVG (sin librerías) ===== */
 let CHART_Q=[],CHART_INST=[],CHART_N=0;
 function chartId(){return 'cx'+(++CHART_N);}
-function queueChart(id,opts){CHART_Q.push({id:id,opts:opts});}
+function queueChart(id,opts,eng){CHART_Q.push({id:id,opts:opts,eng:eng||'apex'});}
 function mountCharts(){
-  if(!window.ApexCharts){window._cmRetry=(window._cmRetry||0)+1;if(window._cmRetry<16){clearTimeout(window._cmT);window._cmT=setTimeout(mountCharts,300);}return;}
+  var needA=CHART_Q.some(function(x){return x.eng==='apex';}),needE=CHART_Q.some(function(x){return x.eng==='echarts';});
+  if((needA&&!window.ApexCharts)||(needE&&!window.echarts)){window._cmRetry=(window._cmRetry||0)+1;if(window._cmRetry<22){clearTimeout(window._cmT);window._cmT=setTimeout(mountCharts,300);}return;}
   window._cmRetry=0;
-  CHART_INST.forEach(function(c){try{c.destroy();}catch(e){}});CHART_INST=[];const q=CHART_Q;CHART_Q=[];
-  q.forEach(function(it){const el=document.getElementById(it.id);if(!el)return;try{const ch=new ApexCharts(el,it.opts);ch.render();CHART_INST.push(ch);}catch(e){el.innerHTML='<div class="empty">Gráfico no disponible</div>';}});}
+  CHART_INST.forEach(function(c){try{if(c&&c.dispose)c.dispose();else if(c&&c.destroy)c.destroy();}catch(e){}});CHART_INST=[];
+  const q=CHART_Q;CHART_Q=[];
+  q.forEach(function(it){const el=document.getElementById(it.id);if(!el)return;try{
+    if(it.eng==='echarts'){var ec=echarts.init(el);ec.setOption(it.opts);CHART_INST.push(ec);}
+    else{var ax=new ApexCharts(el,it.opts);ax.render();CHART_INST.push(ax);}
+  }catch(e){el.innerHTML='<div class="empty">Gráfico no disponible</div>';}});}
 function fmtAxisUSD(v){v=v||0;const a=Math.abs(v);return (v<0?'-':'')+'US$'+(a>=1000?(a/1000).toFixed(a>=10000?0:1)+'M':Math.round(a)+'K');}
 function tipUSD(v){return 'US$'+Math.round(v||0).toLocaleString('es-CL')+'K';}
 function sparkline(arr,color){const pts=arr.filter(x=>x!=null);if(pts.length<2)return '';const id=chartId();
@@ -349,6 +357,29 @@ function barChart(labels,budget,real){const id=chartId();
   return '<div id="'+id+'" style="width:100%;height:100%"></div>';}
 function cumBudget(arr){let a=0;return arr.map(v=>(a+=(v||0)));}
 function cumReal(arr){let a=0,stop=false;return arr.map(v=>{if(stop||v==null){stop=true;return null;}a+=v;return a;});}
+function bar3d(labels,budget,real){const id=chartId();var maxv=Math.max.apply(null,[1].concat(budget.map(function(v){return v||0;}),real.filter(function(v){return v!=null;})));
+  var data=[];labels.forEach(function(l,i){data.push([i,0,Math.round(budget[i]||0)]);data.push([i,1,real[i]!=null?Math.round(real[i]):0]);});
+  queueChart(id,{tooltip:{formatter:function(p){return labels[p.data[0]]+' · '+(p.data[1]===0?'Budget':'Real')+': US$'+(p.data[2]||0).toLocaleString('es-CL')+'K';}},
+    visualMap:{show:false,min:0,max:maxv,dimension:2,inRange:{color:['#23456b','#3f6d9c','#5B86B0','#E8A45C','#E27B2E','#D2691E']}},
+    xAxis3D:{type:'category',data:labels,axisLabel:{color:'#6b7d92',fontSize:10}},
+    yAxis3D:{type:'category',data:['Budget','Real'],axisLabel:{color:'#6b7d92',fontSize:10}},
+    zAxis3D:{type:'value',axisLabel:{color:'#9aabbf',fontSize:9,formatter:function(v){return v>=1000?(v/1000).toFixed(1)+'M':v+'K';}}},
+    grid3D:{boxWidth:110,boxDepth:34,boxHeight:72,viewControl:{autoRotate:true,autoRotateSpeed:7,distance:185,alpha:18,beta:35},light:{main:{intensity:1.25,shadow:true,shadowQuality:'high'},ambient:{intensity:.35}},axisLine:{lineStyle:{color:'#c4d2e0'}},splitLine:{lineStyle:{color:'rgba(18,44,82,.08)'}}},
+    series:[{type:'bar3D',data:data,shading:'realistic',barSize:7,bevelSize:.35,bevelSmoothness:2,emphasis:{itemStyle:{color:'#E27B2E'}}}]},'echarts');
+  return '<div id="'+id+'" style="width:100%;height:100%"></div>';}
+function gauge(pct,label,color){const id=chartId();var v=Math.round(pct||0);color=color||'#E27B2E';
+  queueChart(id,{chart:{type:'radialBar',height:'100%',animations:{enabled:true,speed:900},fontFamily:'inherit'},series:[Math.max(0,Math.min(100,v))],
+    plotOptions:{radialBar:{startAngle:-130,endAngle:130,hollow:{size:'58%'},track:{background:'rgba(18,44,82,.08)',strokeWidth:'100%'},dataLabels:{name:{offsetY:20,color:'#5d738c',fontSize:'12px',fontWeight:600},value:{offsetY:-10,fontSize:'27px',fontWeight:800,color:'#12253a',formatter:function(){return v+'%';}}}}},
+    fill:{type:'gradient',gradient:{shade:'dark',type:'horizontal',gradientToColors:[color],stops:[0,100]}},colors:[color],stroke:{lineCap:'round'},labels:[label||'Ejecución']});
+  return '<div id="'+id+'" style="width:100%;height:100%"></div>';}
+function donut(items){const id=chartId();if(!items||!items.length)return '<div class="empty">Sin datos</div>';
+  var labels=items.map(function(x){return x.n;}),vals=items.map(function(x){return Math.round(x.v);});
+  queueChart(id,{chart:{type:'donut',height:'100%',animations:{speed:800},fontFamily:'inherit'},series:vals,labels:labels,
+    colors:['#E27B2E','#5B86B0','#2fbf71','#e8b53c','#9b59b6','#1abc9c','#e67e22','#34557a','#c0392b','#16a085','#8e44ad','#7f8c8d'],
+    dataLabels:{enabled:false},stroke:{width:2,colors:['#fff']},
+    plotOptions:{pie:{donut:{size:'64%',labels:{show:true,name:{fontSize:'12px',color:'#5d738c'},value:{fontSize:'17px',fontWeight:800,color:'#12253a',formatter:function(v){return 'US$'+Math.round(v).toLocaleString('es-CL')+'K';}},total:{show:true,label:'Total',color:'#5d738c',formatter:function(w){return 'US$'+(w.globals.seriesTotals.reduce(function(a,b){return a+b;},0)/1000).toFixed(1)+'M';}}}}}},
+    legend:{position:'bottom',fontSize:'11px',labels:{colors:'#5d738c'},markers:{radius:4}},tooltip:{y:{formatter:tipUSD}}});
+  return '<div id="'+id+'" style="width:100%;height:100%"></div>';}
 function lineChart(labels,sA,sB,labA,labB){const id=chartId();
   queueChart(id,{chart:{type:'area',height:'100%',toolbar:{show:false},fontFamily:'inherit',animations:{speed:750}},
     series:[{name:labA||'Budget',data:sA.map(function(v){return v==null?null:Math.round(v);})},{name:labB||'Real',data:sB.map(function(v){return v==null?null:Math.round(v);})}],
@@ -370,13 +401,13 @@ async function doLogin(){const u=$('#lg_user').value.trim(),p=$('#lg_pass').valu
     if(!j.access_token){$('#lg_err').textContent='Usuario o contraseña incorrectos.';btn.textContent='Ingresar';return;}
     TOKEN=j.access_token;const myId=j.user.id;
     await fetchAll();
-    SESSION=DB.users.find(x=>x.id===myId)||{id:myId,name:email,role_id:'rv'};
+    SESSION=DB.users.find(x=>x.id===myId)||{id:myId,name:email,role_id:'rv'};SCOPE=(!isAdmin()&&SESSION.area_ids&&SESSION.area_ids.length)?SESSION.area_ids.slice():null;
     $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
     $('#mineSel').innerHTML=DB.faenas.map(f=>'<option value="'+f.id+'">'+f.name+'</option>').join('');
     CURRENT=perms()[0]||'dashboard';buildNav();render();
   }catch(e){$('#lg_err').textContent='Error de conexión: '+e.message;btn.textContent='Ingresar';}
 }
-function logout(){TOKEN=null;SESSION=null;$('#app').classList.add('hidden');$('#login').classList.remove('hidden');$('#lg_pass').value='';$('#lg_btn').textContent='Ingresar';}
+function logout(){TOKEN=null;SESSION=null;SCOPE=null;$('#app').classList.add('hidden');$('#login').classList.remove('hidden');$('#lg_pass').value='';$('#lg_btn').textContent='Ingresar';}
 function toggleSidebar(o){const sb=$('#sidebar'),ov=$('#sbOverlay');if(o){sb.classList.add('open');ov.classList.add('show');}else{sb.classList.remove('open');ov.classList.remove('show');}}
 
 /* ===== Carga de datos ===== */
@@ -402,7 +433,7 @@ function go(m){if(!can(m))return;CURRENT=m;buildNav();render();toggleSidebar(fal
 function render(){if(!SESSION)return;$('#tb_name').textContent=SESSION.name;$('#tb_role').textContent=(roleOf(SESSION)||{}).name||'';$('#tbTitle').textContent=modName(CURRENT);
   const cm=(DB.modules||[]).find(m=>m.id===CURRENT);
   const fns={dashboard:viewDashboard,cierre:viewCierre,mina:function(){return viewCostos('mina');},planta:function(){return viewCostos('planta');},budget:viewBudget,informes:viewInformes,proyeccion:viewProyeccion,usuarios:viewUsuarios,claves:viewClaves,config:viewConfig};
-  CHART_Q=[];$('#viewport').innerHTML=cm?viewCustom(cm):((fns[CURRENT]||viewDashboard)());mountCharts();}
+  CHART_Q=[];var sb=(ADMIN_MODS.indexOf(CURRENT)<0&&!cm)?scopeBanner():'';$('#viewport').innerHTML=sb+(cm?viewCustom(cm):((fns[CURRENT]||viewDashboard)()));mountCharts();}
 
 /* ===== Vistas ===== */
 /* ===== Cierre de Mes (dashboard ejecutivo automático) ===== */
@@ -431,6 +462,7 @@ function viewCierre(){const f=curFaena();const m=Math.min(11,Math.max(0,CIERRE_M
    '<div class="editbar"><label style="margin:0 8px 0 0">Mes de cierre</label><select onchange="setCierreMes(this.value)" style="max-width:190px">'+opts+'</select></div>'+
    '<div class="heroband"><div class="hb-t">Cierre '+MESES[m]+' '+ANIO+' · '+fn+'</div><div class="hb-v">'+fmtM(tot.r)+' <span style="font-size:14px;color:#9cc2ec;font-weight:600">de '+fmtM(tot.b)+' budget</span></div><div class="hb-s">Ejecución '+ejec.toFixed(0)+'% del budget mensual · Desviación mes '+(devM>0?'+':'')+(devM*100).toFixed(1)+'% · Acumulado año '+fmtM(ytd.r)+'</div></div>'+
    '<div class="statwrap"><div class="ministat"><div class="l">Real del mes</div><div class="v">'+fmtM(tot.r)+'</div></div><div class="ministat"><div class="l">Budget del mes</div><div class="v">'+fmtM(tot.b)+'</div></div><div class="ministat"><div class="l">Desviación mes</div><div class="v" style="color:'+devCol+'">'+(devM>0?'+':'')+(devM*100).toFixed(1)+'%</div></div><div class="ministat"><div class="l">Ejecución OPEX</div><div class="v">'+ejec.toFixed(0)+'%</div><div class="track" style="margin-top:7px"><div class="fill '+(ejec>100?'bad':'ok')+'" style="width:'+Math.min(100,ejec)+'%"></div></div></div></div>'+
+   '<div class="sectit"><span class="lft">Ejecución OPEX del mes</span><span class="pill">'+MESES[m]+'</span></div><div class="chartbox" style="height:225px">'+gauge(ejec,'del budget mensual',ejec>100?'#c0392b':'#2fbf71')+'</div>'+
    '<div class="grid g2" style="margin-top:13px">'+kpiArea(mina,'Mina · mes','mina')+kpiArea(planta,'Planta · mes','planta')+'</div>'+
    '<div class="sectit"><span class="lft">Acumulado YTD · Real vs Budget</span><span class="pill">US$K</span></div><div class="chartbox">'+lineChart(labels,sb,sr,'Budget acum.','Real acum.')+'</div>'+
    '<div class="sectit"><span class="lft">Semáforo por área · '+MESES[m]+'</span><span class="pill">'+areas.length+' áreas</span></div>'+(sem||'<div class="empty">Sin datos del mes</div>')+
@@ -446,9 +478,9 @@ function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{})
    '<div class="ministat"><div class="l">Proyección año</div><div class="v">'+fmtM(tot.proy)+'</div></div></div>'+
    '<div class="grid g2" style="margin-top:13px"><div class="card kpi accent"><div class="lbl">'+ic('mina',14)+' Costo Mina</div><div class="val">'+fmtM(mi.rAcum)+'</div><span class="delta '+(mi.dev>0?'up':'down')+'">'+(mi.dev>0?'+':'')+(mi.dev*100).toFixed(1)+'% vs budget</span>'+sparkline(sm.r,'#E27B2E')+'</div>'+
    '<div class="card kpi accent"><div class="lbl">'+ic('planta',14)+' Costo Planta</div><div class="val">'+fmtM(pl.rAcum)+'</div><span class="delta '+(pl.dev>0?'up':'down')+'">'+(pl.dev>0?'+':'')+(pl.dev*100).toFixed(1)+'% vs budget</span>'+sparkline(sp.r,'#4C76A0')+'</div></div>'+
-   '<div class="sectit"><span class="lft">Real vs Budget · '+ANIO+'</span><span class="pill">US$K / mes</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r)+'</div>'+
+   '<div class="sectit"><span class="lft">Real vs Budget · '+ANIO+'</span><span class="pill">3D · arrastra para girar</span></div><div class="chartbox" style="height:340px">'+bar3d(MESES,s.b,s.r)+'</div>'+
    '<div class="sectit"><span class="lft">Costo acumulado · Real vs Budget</span><span class="pill">US$K acumulado</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(s.b),cumReal(s.r),'Budget acum.','Real acum.')+'</div>'+
-   '<div class="sectit"><span class="lft">Distribución de costo por área</span></div><div class="card">'+(dist.length?dist.map(d=>'<div class="barrow"><div class="top"><b>'+d.n+'</b><span class="n">'+fmtK(d.v)+'</span></div><div class="track"><div class="fill" style="width:'+(d.v/mx*100)+'%"></div></div></div>').join(''):'<div class="empty">Sin datos</div>')+'</div>'+
+   '<div class="sectit"><span class="lft">Distribución de costo por área</span><span class="pill">Real YTD</span></div><div class="chartbox" style="height:300px">'+donut(dist.slice(0,9))+'</div>'+
    '<div class="sectit"><span class="lft">Proyección de cierre de año</span></div><div class="card"><div class="barrow"><div class="top"><b>Real proyectado</b><span class="n">'+fmtM(tot.proy)+' / '+fmtM(tot.bAnual)+'</span></div><div class="track"><div class="fill '+(tot.proy>tot.bAnual?'bad':'ok')+'" style="width:'+Math.min(100,tot.bAnual?tot.proy/tot.bAnual*100:0)+'%"></div></div></div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px"><div class="val" style="font-size:20px;font-weight:800">'+fmtM(tot.proy)+'</div><span class="tag '+(tot.devAnual>0?'bad':'ok')+'">'+(tot.devAnual>0?'+':'')+(tot.devAnual*100).toFixed(1)+'% vs budget</span></div></div>';}
 
 function viewCostos(tipo){const f=curFaena();const t=faenaTotals(f,tipo);const ar=areasOf(f,tipo);const s=monthly(f,tipo);
@@ -482,13 +514,21 @@ function viewBudget(){const f=curFaena();const mi=faenaTotals(f,'mina'),pl=faena
    '<div class="sectit"><span class="lft">Resumen presupuestario</span></div><div class="card"><table class="tbl"><tr><th>Segmento</th><th>Budget</th><th>Proy.</th><th>Desv.</th></tr>'+rows+'</table></div>'+
    (canEdit()?('<div class="sectit"><span class="lft">'+ic('edit',16)+' Editar presupuesto por área</span></div>'+editGrid('all')):'');}
 
-function viewProyeccion(){const f=curFaena();const tot=faenaTotals(f);const dev=tot.devAnual;const s=monthly(f,null);
-  let bAcc=0,rAcc=0;const lab=[],bud=[],real=[];let fac=(function(){let b=0,r=0;for(let m=0;m<=MES_ACTUAL;m++){b+=s.b[m];r+=s.r[m]||0;}return b?r/b:1;})();let p=0;
-  for(let m=0;m<12;m++){bAcc+=s.b[m];lab.push(MESES[m]);bud.push(bAcc);if(m<=MES_ACTUAL){rAcc+=s.r[m]||0;p=rAcc;real.push(rAcc);}else{p+=Math.round(s.b[m]*((fac+1)/2));real.push(p);}}
-  return '<div class="crumb">'+ic('proyeccion',13)+' '+((DB.faenas.find(x=>x.id===f)||{}).name||'')+'</div><h2 class="title">Proyección Anual</h2>'+
-   '<div class="grid g2" style="margin-top:12px"><div class="card kpi accent"><div class="lbl">Cierre proyectado</div><div class="val">'+fmtM(tot.proy)+'</div><span class="delta '+(dev>0?'up':'down')+'">'+(dev>0?'+':'')+(dev*100).toFixed(1)+'% vs budget</span></div><div class="card kpi"><div class="lbl">Budget anual</div><div class="val">'+fmtM(tot.bAnual)+'</div><span class="delta flat">meta '+ANIO+'</span></div></div>'+
-   '<div class="sectit"><span class="lft">Acumulado: Budget vs Real+Proyección</span></div><div class="chartbox">'+barChart(lab,bud,real)+'</div>'+
-   '<div class="card" style="margin-top:13px"><div class="muted" style="margin-bottom:8px">Lógica</div><p class="muted" style="line-height:1.6;margin:0">Real acumulado a '+MESES[MES_ACTUAL]+' + budget restante ajustado por el factor de desempeño actual ('+(tot.bAcum?(tot.rAcum/tot.bAcum).toFixed(2):'1')+').</p></div>';}
+function viewProyeccion(){const f=curFaena();const fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';const tot=faenaTotals(f);const dev=tot.devAnual;const s=monthly(f,null);
+  const lab=MESES.slice();const bud=cumBudget(s.b);const fac=(function(){let b=0,r=0;for(let m=0;m<=MES_ACTUAL;m++){b+=s.b[m];r+=s.r[m]||0;}return b?r/b:1;})();
+  const real=[];let rAcc=0,p=0;for(let m=0;m<12;m++){if(m<=MES_ACTUAL){rAcc+=s.r[m]||0;p=rAcc;real.push(rAcc);}else{p+=Math.round(s.b[m]*((fac+1)/2));real.push(p);}}
+  const avance=Math.round((MES_ACTUAL+1)/12*100);
+  let ars=areasOf(f).map(function(a){const t=areaTotals(a.id);const d=t.bAnual?(t.proy-t.bAnual)/t.bAnual:0;return {n:a.name,tipo:a.tipo,proy:t.proy,ba:t.bAnual,d:d};}).filter(function(x){return x.ba>0||x.proy>0;});
+  ars.sort(function(x,y){return y.proy-x.proy;});
+  const rows=ars.map(function(a){const over=a.d>0.03,under=a.d<-0.03;const fg=over?'#c0392b':under?'#1e8e54':'#b8860b';const pct=a.ba?Math.min(100,a.proy/a.ba*100):0;
+    return '<div class="barrow"><div class="top"><b>'+a.n+'</b><span class="n">'+fmtK(a.proy)+' / '+fmtK(a.ba)+' <b style="color:'+fg+'">'+(a.d>0?'+':'')+(a.d*100).toFixed(0)+'%</b></span></div><div class="track"><div class="fill '+(over?'bad':under?'ok':'')+'" style="width:'+pct+'%"></div></div></div>';}).join('');
+  const overrun=ars.filter(function(a){return a.d>0.03;}).length;
+  return '<div class="crumb">'+ic('proyeccion',13)+' '+fn+'</div><h2 class="title">Proyección Anual</h2>'+
+   '<div class="heroband"><div class="hb-t">Proyección de cierre '+ANIO+' · '+fn+'</div><div class="hb-v">'+fmtM(tot.proy)+' <span style="font-size:14px;color:#9cc2ec;font-weight:600">vs '+fmtM(tot.bAnual)+' budget anual</span></div><div class="hb-s">Desviación proyectada '+(dev>0?'+':'')+(dev*100).toFixed(1)+'% · Avance del año '+avance+'% · '+(overrun?(overrun+' área(s) sobre presupuesto'):'todo dentro de presupuesto')+'</div></div>'+
+   '<div class="statwrap"><div class="ministat"><div class="l">Real acumulado</div><div class="v">'+fmtM(tot.rAcum)+'</div></div><div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(tot.bAnual)+'</div></div><div class="ministat"><div class="l">Cierre proyectado</div><div class="v">'+fmtM(tot.proy)+'</div></div><div class="ministat"><div class="l">Desv. proyectada</div><div class="v" style="color:'+(dev>0?'#c0392b':'#1e8e54')+'">'+(dev>0?'+':'')+(dev*100).toFixed(1)+'%</div></div></div>'+
+   '<div class="sectit"><span class="lft">Trayectoria anual · Budget vs Real + Proyección</span><span class="pill">US$K acumulado</span></div><div class="chartbox">'+lineChart(lab,bud,real,'Budget acum.','Real + Proyección')+'</div>'+
+   '<div class="sectit"><span class="lft">Proyección por área · cierre vs budget</span><span class="pill">'+ars.length+' áreas</span></div><div class="card">'+(rows||'<div class="empty">Sin áreas</div>')+'</div>'+
+   '<div class="card" style="margin-top:13px"><div class="muted" style="margin-bottom:6px">Cómo se calcula</div><p class="muted" style="line-height:1.6;margin:0">Proyección = Real acumulado a '+MESES[MES_ACTUAL]+' + budget de los meses restantes, ajustado por el factor de desempeño actual ('+(tot.bAcum?(tot.rAcum/tot.bAcum).toFixed(2):'1.00')+'). Verde = bajo presupuesto · rojo = sobre presupuesto.</p></div>';}
 
 function viewInformes(){const f=curFaena();const ts=DB.reportTypes;const list=DB.reports.filter(r=>r.faena===f&&(INF_FILTER==='all'||r.type===INF_FILTER));
   const chips='<div class="tabs"><button class="'+(INF_FILTER==='all'?'on':'')+'" onclick="INF_FILTER=\'all\';render()">Todos</button>'+ts.map(t=>'<button class="'+(INF_FILTER===t.id?'on':'')+'" onclick="INF_FILTER=\''+t.id+'\';render()">'+t.name+'</button>').join('')+'</div>';
@@ -500,7 +540,7 @@ function viewUsuarios(){if(!can('usuarios'))return '<div class="empty">Sin acces
   const allMods=Object.keys(MODULES).map(m=>({id:m,name:MODULES[m].name,icon:MODICON[m]})).concat((DB.modules||[]).map(m=>({id:m.id,name:m.name,icon:m.icon||'dashboard'})));
   const cards=DB.roles.map(r=>{const chips=allMods.map(m=>'<div class="chip '+((r.perms||[]).indexOf(m.id)>=0?'on':'')+'" onclick="togglePerm(\''+r.id+'\',\''+m.id+'\')">'+ic(m.icon,14)+' '+m.name+'</div>').join('');const n=DB.users.filter(u=>u.role_id===r.id).length;
     return '<div class="card" style="margin-bottom:12px"><div class="rolehead"><b>'+r.name+(r.view_only?' (solo ver)':'')+'</b><span style="display:flex;align-items:center;gap:8px"><span class="cnt">'+(r.perms||[]).length+' módulos · '+n+' usuarios</span><button class="iconbtn" onclick="delRole(\''+r.id+'\')">'+ic('trash',16)+'</button></span></div><div class="muted" style="margin:9px 0 4px;font-size:11px">Módulos visibles (toca para activar/desactivar):</div><div class="chips">'+chips+'</div></div>';}).join('');
-  const us=DB.users.map(u=>{const r=roleOf(u);return '<div class="lrow"><div class="ic">'+(u.name||'?').charAt(0).toUpperCase()+'</div><div class="mid"><b>'+u.name+'</b><span>@'+u.username+' · '+(r?r.name:'—')+'</span></div><button class="iconbtn" onclick="delUser(\''+u.username+'\')">'+ic('trash',16)+'</button></div>';}).join('');
+  const us=DB.users.map(u=>{const r=roleOf(u);const na=(u.area_ids&&u.area_ids.length)?(u.area_ids.length+' área'+(u.area_ids.length>1?'s':'')):'consolidado';return '<div class="lrow"><div class="ic">'+(u.name||'?').charAt(0).toUpperCase()+'</div><div class="mid"><b>'+u.name+'</b><span>@'+u.username+' · '+(r?r.name:'—')+' · <b style="color:var(--copper2)">'+na+'</b></span></div><button class="iconbtn" onclick="openUserAreas(\''+u.username+'\')" title="Áreas que ve este usuario">'+ic('mina',16)+'</button><button class="iconbtn" onclick="delUser(\''+u.username+'\')">'+ic('trash',16)+'</button></div>';}).join('');
   return '<div class="crumb">'+ic('usuarios',13)+' Administración de accesos</div><h2 class="title">Crear Perfiles y Usuarios</h2>'+
    '<p class="muted" style="line-height:1.6;margin-bottom:6px">Los accesos se asignan por <b style="color:var(--copper2)">perfil de cargo</b>. Cada usuario hereda los módulos de su cargo.</p>'+
    '<div class="sectit"><span class="lft">'+ic('plus',16)+' Nuevo cargo</span></div><div class="card"><div class="addrow"><input id="nrole_name" placeholder="Nombre del cargo"><button class="btn sm" onclick="addRole()">'+ic('plus',15)+' Agregar</button></div></div>'+
@@ -569,6 +609,12 @@ async function genClave(){const name=$('#gc_name').value.trim();if(!name)return 
   try{await rpc('mantos_create_user',{p_email:un+EMAIL_DOMAIN,p_pass:p,p_name:name,p_username:un,p_role:$('#gc_role').value});await fetchAll();saveClave(un,p);render();showClave(name,un,p,$('#gc_role').value);}catch(e){toast('Error: '+e.message);}}
 function showClave(name,un,p,roleId){const r=DB.roles.find(x=>x.id===roleId)||{};modal('<h3>'+ic('key',18)+' Clave generada</h3><div class="card" style="margin-bottom:12px"><div class="perm"><span>Persona</span><b>'+name+'</b></div><div class="perm"><span>Usuario</span><b style="color:var(--copper2)">'+un+'</b></div><div class="perm"><span>Clave</span><b style="color:var(--copper2)">'+p+'</b></div><div class="perm"><span>Perfil</span><b>'+(r.name||'')+(r.view_only?' (solo ver)':'')+'</b></div></div><div class="flexbtns"><button class="btn" style="width:auto" onclick="copyAccess(\''+name+'\',\''+un+'\',\''+p+'\')">'+ic('copy',16)+' Copiar</button><button class="btn wa" style="width:auto" onclick="waAccess(\''+name+'\',\''+un+'\',\''+p+'\')">'+ic('wa',16)+' WhatsApp</button></div><button class="btn ghost" style="margin-top:8px" onclick="closeModal()">Cerrar</button>');}
 async function delUser(un){if(SESSION&&SESSION.username===un)return toast('No puedes eliminarte');if(!confirm('¿Eliminar usuario '+un+'?'))return;try{await rpc('mantos_delete_user',{p_username:un});DB.users=DB.users.filter(u=>u.username!==un);render();toast('Usuario eliminado');}catch(e){toast('Error: '+e.message);}}
+function openUserAreas(un){var u=DB.users.find(function(x){return x.username===un;});if(!u)return;var cur=(u.area_ids||[]);var f=curFaena();
+  var ars=DB.areas.filter(function(a){return a.faena===f;});
+  var grp=function(tipo,lbl){var items=ars.filter(function(a){return a.tipo===tipo;});if(!items.length)return '';return '<div class="muted" style="margin:10px 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.5px">'+lbl+'</div>'+items.map(function(a){var on=cur.indexOf(a.id)>=0;return '<label class="perm" style="cursor:pointer"><span>'+ic(tipo==='mina'?'mina':'planta',15)+' '+a.name+'</span><input type="checkbox" data-aid="'+a.id+'" '+(on?'checked':'')+' style="width:auto"></label>';}).join('');};
+  modal('<h3>'+ic('mina',18)+' Áreas de '+(u.name||un)+'</h3><div class="muted" style="margin-bottom:6px">Marca lo que verá este usuario al entrar. Si <b>no marcas nada</b>, ve el <b style="color:var(--copper2)">consolidado</b> (todas las áreas) — ideal para el gerente.</div><div id="ua_list" style="max-height:44vh;overflow:auto">'+(grp('mina','Mina')+grp('planta','Planta')||'<div class="empty">Sin áreas en esta faena.</div>')+'</div><div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="saveUserAreas(\''+un+'\')">'+ic('check',16)+' Guardar áreas</button><button class="btn ghost" style="width:auto" onclick="closeModal()">Cancelar</button></div>');}
+async function saveUserAreas(un){var ids=[].slice.call(document.querySelectorAll('#ua_list input[type=checkbox]')).filter(function(c){return c.checked;}).map(function(c){return c.getAttribute('data-aid');});
+  try{await rpc('mantos_set_user_areas',{p_username:un,p_areas:ids});var u=DB.users.find(function(x){return x.username===un;});if(u)u.area_ids=ids;if(SESSION&&SESSION.username===un)SCOPE=(!isAdmin()&&ids.length)?ids.slice():null;closeModal();render();toast('Áreas asignadas: '+(ids.length?ids.length:'consolidado'));}catch(e){toast('Error: '+e.message);}}
 async function addCustomModule(){const name=$('#nm_name').value.trim();if(!name)return toast('Nombre');const id=uid('m');const mod={id:id,name:name,descr:$('#nm_desc').value.trim(),icon:$('#nm_icon').value,cols:[],rows:[]};
   try{await rest('mantos_modules','POST',mod);DB.modules.push(mod);for(const r of DB.roles){if(r.id==='r0'||(r.perms||[]).indexOf('config')>=0){r.perms=(r.perms||[]).concat([id]);await rest('mantos_roles?id=eq.'+r.id,'PATCH',{perms:r.perms});}}buildNav();render();toast('Módulo creado');}catch(e){toast('Error: '+e.message);}}
 async function delCustomModule(id){if(!confirm('¿Eliminar módulo?'))return;try{await rest('mantos_modules?id=eq.'+id,'DELETE');DB.modules=DB.modules.filter(m=>m.id!==id);for(const r of DB.roles){if((r.perms||[]).indexOf(id)>=0){r.perms=r.perms.filter(p=>p!==id);await rest('mantos_roles?id=eq.'+r.id,'PATCH',{perms:r.perms});}}if(CURRENT===id)CURRENT='config';buildNav();render();toast('Módulo eliminado');}catch(e){toast('Error: '+e.message);}}
