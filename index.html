@@ -691,8 +691,8 @@ function viewCustom(mod){const ed=canEdit();const cols=mod.cols||[],rows=mod.row
   return head+ctr+stat+per+'<div class="sectit"><span class="lft">Datos cargados</span><span class="pill">'+rows.length+' filas</span></div><div class="card nopad" style="overflow-x:auto"><table class="tbl">'+rh+rb+'</table></div>';}
 
 function viewConfig(){if(!can('config'))return '<div class="empty">Sin acceso.</div>';
-  const tabs=[['datos','Cargar Datos · Mina · Planta · Área'],['areas','Áreas'],['modulos','Módulos']];
-  const body=({datos:cfgDatos,areas:cfgAreas,modulos:cfgModules}[CFG_TAB]||cfgDatos)();
+  const tabs=[['datos','Cargar Datos · Mina · Planta · Área'],['areas','Áreas'],['informes','Configuración de Informes'],['modulos','Módulos']];
+  const body=({datos:cfgDatos,areas:cfgAreas,informes:cfgInformes,modulos:cfgModules}[CFG_TAB]||cfgDatos)();
   return '<div class="crumb">'+ic('config',13)+' Administración</div><h2 class="title">Configuración</h2><div class="tabs">'+tabs.map(t=>'<button class="'+(CFG_TAB===t[0]?'on':'')+'" onclick="cfgTab(\''+t[0]+'\')">'+t[1]+'</button>').join('')+'</div>'+body;}
 function cfgTab(t){CFG_TAB=t;render();}
 function cfgDatos(){const url=location.origin+location.pathname;const fn=(DB.faenas.find(x=>x.id===curFaena())||{}).name||'';const f=curFaena();
