@@ -1000,12 +1000,12 @@ const CUENTAS_SAP=[['4080537900','Ítems Reparados'],['4080536300','Repuestos Me
 function downloadHistorial(tipo){genHistorialXlsx(tipo);}
 function genHistorialXlsx(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||f;var tl=(tipo==='mina'?'Mina':tipo==='planta'?'Planta':'Costos');
   var ars=leafAreasOf(f,tipo||'all');
-  var head=['Mes','Centro de costo','Ceco','Sub areas','Cuenta mayor','Area','Claco','Orden','Asignacion (orden)','Real','Budget'];var data=[head];
+  var head=['Mes',(tipo==='mina'?'Categoría':'Area'),'Sub area','Centro de costo','Ceco','Real','Budget'];var data=[head];
   ars.forEach(function(a){var anc=ancestors(a);var area=anc.length?anc[anc.length-1].name:a.name;var subarea=(anc.length>=2?anc[0].name:'');
-    for(var m=0;m<12;m++){data.push([MESES[m]+' '+ANIO,a.name,(a.ceco||''),subarea,'',area,'','','','','']);}});
-  if(!ars.length){for(var m0=0;m0<12;m0++)data.push([MESES[m0]+' '+ANIO,'','','','','','','','','','']);}
-  var wsH=XLSX.utils.aoa_to_sheet(data);wsH['!cols']=[{wch:13},{wch:30},{wch:14},{wch:24},{wch:16},{wch:14},{wch:10},{wch:12},{wch:18},{wch:12},{wch:12}];
-  var wsI=XLSX.utils.aoa_to_sheet([['MANTOS CONTROL 360 — Plantilla '+tl+' '+ANIO+' · '+fn],[''],['Se genera con la estructura ACTUAL del organigrama (se actualiza sola al agregar o quitar '+(tipo==='mina'?'equipos':'áreas')+').'],['1) Completa SOLO las columnas Real y Budget (en USD). Lo demás ya viene con la estructura oficial.'],['2) No cambies el Ceco: es la llave que engancha cada línea con la plataforma.'],['3) Cuenta mayor / Claco / Orden / Asignación son opcionales (datos SAP).'],['4) Súbela en Configuración → Cargar Datos, eligiendo '+(tipo?tl:'Mina o Planta')+'.']]);wsI['!cols']=[{wch:112}];
+    for(var m=0;m<12;m++){data.push([MESES[m]+' '+ANIO,area,subarea,a.name,(a.ceco||''),'','']);}});
+  if(!ars.length){for(var m0=0;m0<12;m0++)data.push([MESES[m0]+' '+ANIO,'','','','','','']);}
+  var wsH=XLSX.utils.aoa_to_sheet(data);wsH['!cols']=[{wch:13},{wch:16},{wch:22},{wch:30},{wch:14},{wch:12},{wch:12}];
+  var wsI=XLSX.utils.aoa_to_sheet([['MANTOS CONTROL 360 — Plantilla '+tl+' '+ANIO+' · '+fn],[''],['La plantilla ya trae la estructura oficial: una fila por '+(tipo==='mina'?'equipo':'área')+' y mes, con su Centro de costo y Ceco correctos.'],['1) Completa SOLO las columnas Real y Budget (en USD). No escribas nada más.'],['2) NO cambies el Ceco ni el orden de las columnas: el Ceco es la llave que reparte cada monto a su recuadro del organigrama.'],['3) Súbela en Configuración → Cargar Datos, eligiendo '+(tipo?tl:'Mina o Planta')+'. Cada fila cae en su equipo/área y suma solo a su cabeza de serie.']]);wsI['!cols']=[{wch:118}];
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,wsH,'Planilla '+ANIO);XLSX.utils.book_append_sheet(wb,wsI,'Instrucciones');
   var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});offerDownload(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Plantilla_'+tl+'_'+f+'_'+ANIO+'.xlsx','plantilla '+tl);}
 function downloadOL(){const f=curFaena();const ars=leafAreasOf(f);const per=Math.min(12,MES_ACTUAL+1);const cat='OL'+(''+ANIO).slice(2)+(per<10?'0'+per:per);
@@ -1106,19 +1106,29 @@ async function confirmImport(){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPO
   /* 1) poner en CERO solo las HOJAS de este mundo — mantiene el árbol intacto */
   var leavesT=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&isLeafArea(a);});
   leavesT.forEach(function(a){DB.costs[a.id]={budget:Array(12).fill(0),real:Array(12).fill(null)};});
-  /* 2) enganchar cada grupo de la planilla a su HOJA por Ceco (o por nombre); nunca se borra estructura */
-  let matched=0,createdN=0;var noMatch=[];
+  /* 2) mapa de hojas por Ceco y por nombre — robusto aunque la planilla invierta columnas */
+  function nC(s){return (''+s).toUpperCase().replace(/\s+/g,'').trim();}
+  function nN(s){return (''+s).toLowerCase().replace(/\s+/g,' ').trim();}
+  var mapCeco={},mapName={};
+  leavesT.forEach(function(a){if(a.ceco)mapCeco[nC(a.ceco)]=a;if(a.name)mapName[nN(a.name)]=a;});
+  var hasTree=leavesT.length>0;let matched=0,createdN=0;var noMatch=[];
   for(const key of Object.keys(p.agg)){var G=p.agg[key];var target=null;
-    if(p.byCeco&&G.ceco){var gc=(''+G.ceco).toUpperCase().trim();target=DB.areas.find(function(a){return a.faena===f&&a.tipo===tipo&&a.ceco&&(''+a.ceco).toUpperCase().trim()===gc;});}
-    if(!target&&G.name){var gn=(''+G.name).toLowerCase().trim();target=DB.areas.find(function(a){return a.faena===f&&a.tipo===tipo&&isLeafArea(a)&&a.name.toLowerCase().trim()===gn;});}
-    if(!target){var id=uid('n');target={id:id,faena:f,tipo:tipo,name:(G.name||G.ceco||'Sin asignar'),parent:null,nivel:0,orden:99,ceco:(G.ceco||null)};DB.areas.push(target);DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};try{await rest('mantos_areas','POST',target);}catch(e){}createdN++;noMatch.push(target.name);}
-    else matched++;
+    var cands=[];if(G.ceco)cands.push(G.ceco);if(G.name)cands.push(G.name);
+    for(var ci=0;ci<cands.length&&!target;ci++){target=mapCeco[nC(cands[ci])]||mapName[nN(cands[ci])];}
+    if(!target){
+      if(hasTree){noMatch.push(G.name||G.ceco||key);continue;}/* con árbol existente: NUNCA crear cabezas nuevas */
+      var id=uid('n');target={id:id,faena:f,tipo:tipo,name:(G.name||G.ceco||'Sin asignar'),parent:null,nivel:0,orden:99,ceco:(G.ceco||null)};DB.areas.push(target);DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};try{await rest('mantos_areas','POST',target);}catch(e){}createdN++;
+    }
+    matched++;
     var c=DB.costs[target.id]||(DB.costs[target.id]={budget:Array(12).fill(0),real:Array(12).fill(null)});
     for(let m=0;m<12;m++){if(G.hb[m])c.budget[m]=G.b[m]*p.factor;if(G.hr[m])c.real[m]=G.r[m]*p.factor;}}
   /* 3) guardar en la nube TODAS las celdas de las hojas (refleja cero + lo nuevo, sin sumar lo viejo) */
   const ups=[];var allLeaves=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&isLeafArea(a);});
   allLeaves.forEach(function(a){var c=DB.costs[a.id]||{budget:Array(12).fill(0),real:Array(12).fill(null)};for(let m=0;m<12;m++)ups.push({area_id:a.id,month:m,budget:c.budget[m]||0,real:(c.real[m]==null?null:c.real[m])});});
-  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;buildNav();render();toast(tl+' cargado: '+matched+' enganchados por Ceco'+(createdN?' · '+createdN+' nuevos sin match':''));}catch(e){toast('Error: '+e.message);}}
+  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;buildNav();render();
+    toast(tl+' cargado: '+matched+' equipos/áreas'+(noMatch.length?(' · '+noMatch.length+' omitidos (Ceco no existe)'):'')+(createdN?' · '+createdN+' nuevos':''));
+    if(noMatch.length)setTimeout(function(){alert('⚠️ '+noMatch.length+' fila(s) no coincidieron con ningún Ceco/equipo del organigrama y se OMITIERON (no se crearon cabezas nuevas):\n\n'+noMatch.slice(0,25).join('\n')+'\n\nRevisa que el Ceco de esas filas exista en el árbol.');},350);
+  }catch(e){toast('Error: '+e.message);}}
 function cfgSubir(){const f=curFaena();const ars=leafAreasOf(f);const opts=ars.map(a=>{var anc=ancestors(a).map(function(x){return x.name;}).reverse();return '<option value="'+a.id+'">'+(anc.length?anc.join(' › ')+' › ':'')+a.name+' ('+(a.tipo==='mina'?'Mina':'Planta')+')</option>';}).join('');
   return '<p class="muted" style="line-height:1.6">Elige el área (existente o nueva), sube tu informe Excel y la plataforma lo convierte en dashboard asociado a esa área, en la nube.</p>'+
    '<div class="card"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('upload',16)+' Subir informe a un área</span></div>'+
