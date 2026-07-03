@@ -357,6 +357,7 @@ const MODICON={dashboard:'dashboard',cierre:'doc',areasrep:'planta',equipmina:'m
 const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MES_ACTUAL=5, ANIO=2026;
+const APP_VERSION='2026-07-02 · sin-bloqueo-descargas + jerarquía-Ceco';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -647,7 +648,7 @@ function buildCierrePPT(){
     offerDownload(blob,fname,'presentación PPT');
   }).catch(function(e){toast('Error al exportar: '+e.message);});
 }
-/* Descarga robusta: intenta automático y SIEMPRE deja un botón de clic directo (evita bloqueadores corporativos) */
+/* Descarga a prueba de bloqueos: NUNCA descarga sola — solo un botón de clic directo del usuario (así Chrome corporativo no lo bloquea) */
 function offerDownload(blob,fname,label){
   var url=URL.createObjectURL(blob);
   var old=document.getElementById('dlOverlay');if(old)old.parentNode.removeChild(old);
@@ -657,7 +658,7 @@ function offerDownload(blob,fname,label){
   ov.innerHTML='<div style="background:#fff;border-radius:18px;max-width:420px;width:100%;padding:24px;box-shadow:0 24px 60px rgba(10,25,55,.4);text-align:center;font-family:inherit">'+
     '<div style="width:56px;height:56px;border-radius:16px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0954a,#c25e1b);color:#fff">'+ic('doc',26)+'</div>'+
     '<div style="font-size:17px;font-weight:900;color:#15273b">Tu '+label+' está lista</div>'+
-    '<div style="font-size:12.5px;color:#5d738c;margin:6px 0 16px;line-height:1.6">Si la descarga automática se bloqueó, haz clic en el botón (clic directo, no lo bloquea el sistema).<br><b>'+fname+'</b> · '+kb+' KB</div>'+
+    '<div style="font-size:12.5px;color:#5d738c;margin:6px 0 16px;line-height:1.6">Haz clic para descargar (clic directo — Chrome no lo bloquea).<br><b>'+fname+'</b> · '+kb+' KB</div>'+
     '<a href="'+url+'" download="'+fname+'" onclick="setTimeout(closeDownload,400)" style="display:block;background:linear-gradient(135deg,#123a68,#0c2140);color:#fff;text-decoration:none;font-weight:800;padding:13px;border-radius:12px;font-size:14px">'+'⬇  Descargar ahora</a>'+
     '<button onclick="closeDownload()" style="margin-top:10px;background:transparent;border:0;color:#8798ac;font-weight:700;cursor:pointer;font-size:12.5px">Cerrar</button>'+
     '</div>';
@@ -850,7 +851,7 @@ function cfgDatos(){const url=location.origin+location.pathname;const fn=(DB.fae
     '<input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="onImportFile(this)"><div id="importPreview"></div>'+
     '<div class="flexbtns" style="margin-top:12px;flex-wrap:wrap"><button class="btn ghost" style="width:auto" onclick="downloadHistorial(\'planta\')">'+ic('download',16)+' Plantilla Planta</button><button class="btn ghost" style="width:auto" onclick="downloadHistorial(\'mina\')">'+ic('download',16)+' Plantilla Mina</button><button class="btn" style="width:auto" onclick="openTplEditor()">'+ic('edit',16)+' Usar mi propio formato</button></div><p class="muted" style="margin:9px 0 0;font-size:11.5px">La plantilla trae la <b>estructura ya escrita</b> por el sistema (Área, Sub área, Centro de costo y Ceco) — así no hay errores de tipeo. Paula solo completa <b>Real</b> y <b>Budget</b>.</p></div>'+
    '<div class="card" style="margin-top:13px"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('share',16)+' Compartir la plataforma</span></div><p class="muted" style="line-height:1.6">Tu plataforma EN VIVO. Comparte el link; tu equipo entra con usuario y clave y ve los mismos datos.</p><div class="field"><label>Link público</label><input readonly value="'+url+'" onclick="this.select()"></div><div class="flexbtns"><button class="btn wa" style="width:auto" onclick="shareApp()">'+ic('share',16)+' Compartir por WhatsApp</button></div></div>'+
-   '<div class="card" style="margin-top:13px"><div class="sectit" style="margin-top:0"><span class="lft">Estado del sistema</span></div><div class="perm"><span>Faenas</span><b>'+DB.faenas.length+'</b></div><div class="perm"><span>Áreas</span><b>'+DB.areas.length+'</b></div><div class="perm"><span>Usuarios</span><b>'+DB.users.length+'</b></div><div class="perm"><span>Conexión</span><b style="color:var(--ok)">En la nube ✓</b></div></div>';}
+   '<div class="card" style="margin-top:13px"><div class="sectit" style="margin-top:0"><span class="lft">Estado del sistema</span></div><div class="perm"><span>Faenas</span><b>'+DB.faenas.length+'</b></div><div class="perm"><span>Áreas</span><b>'+DB.areas.length+'</b></div><div class="perm"><span>Usuarios</span><b>'+DB.users.length+'</b></div><div class="perm"><span>Conexión</span><b style="color:var(--ok)">En la nube ✓</b></div><div class="perm"><span>Versión</span><b style="color:var(--copper2)">'+APP_VERSION+'</b></div></div>';}
 function cfgModules(){const list=(DB.modules||[]).map(m=>'<div class="lrow"><div class="ic">'+ic(m.icon||'dashboard',20)+'</div><div class="mid"><b>'+m.name+'</b><span>'+((m.rows&&m.rows.length)?m.rows.length+' filas':'sin datos')+(m.descr?' · '+m.descr:'')+'</span></div><button class="iconbtn" onclick="delCustomModule(\''+m.id+'\')">'+ic('trash',16)+'</button></div>').join('');
   const icons=['dashboard','mina','planta','budget','informes','proyeccion','doc','shield','key','check'];
   return '<p class="muted" style="line-height:1.6">Crea módulos propios. Aparecen en el panel izquierdo y permiten cargar CSV y ver métrica por área y compañía.</p>'+(list||'<div class="empty">Sin módulos.</div>')+
@@ -889,7 +890,9 @@ async function areaDelNode(id){var a=DB.areas.find(function(x){return x.id===id;
   var msg=kidsN?('¿Eliminar "'+a.name+'" y TODO lo que cuelga de él ('+kidsN+' debajo)?\n\nNo se puede deshacer.'):('¿Eliminar "'+a.name+'"?\n\nNo se puede deshacer.');
   if(!confirm(msg))return;
   var inlist='('+ids.map(encodeURIComponent).join(',')+')';
-  try{await rest('mantos_costs?area_id=in.'+inlist,'DELETE');await rest('mantos_areas?id=in.'+inlist,'DELETE');
+  try{await rest('mantos_costs?area_id=in.'+inlist,'DELETE');
+    /* borrar de abajo hacia arriba (hijos antes que padres) para respetar la protección de estructura */
+    for(var d=ids.length-1;d>=0;d--){await rest('mantos_areas?id=eq.'+encodeURIComponent(ids[d]),'DELETE');}
     var rem={};ids.forEach(function(k){rem[k]=true;});DB.areas=DB.areas.filter(function(n){return !rem[n.id];});ids.forEach(function(k){delete DB.costs[k];});
     if(AREA_VIEW&&rem[AREA_VIEW])AREA_VIEW=null;render();toast('Eliminado ✓');}catch(e){toast('Error: '+e.message);}}
 async function addRole(){const n=$('#nrole_name').value.trim();if(!n)return toast('Nombre');const id=uid('r');try{await rest('mantos_roles','POST',{id:id,name:n,perms:['dashboard'],view_only:false});DB.roles.push({id:id,name:n,perms:['dashboard'],view_only:false});render();toast('Cargo creado');}catch(e){toast('Error: '+e.message);}}
