@@ -999,14 +999,11 @@ function downloadTemplate(){genTemplate(tplCfg());toast('Plantilla descargada');
 const CUENTAS_SAP=[['4080537900','Ítems Reparados'],['4080536300','Repuestos Mecánicos'],['4070174100','Contratistas de Mantención'],['4080536000','Repuestos Eléctricos'],['4060233800','Lubricantes y Grasas'],['4040180100','Energía Eléctrica'],['4070470600','Transporte Personal'],['4070473000','Aseo y Serv. al Personal'],['4070574200','Contratistas Operación'],['4080639900','Varios Suministros'],['4060133600','Aceros'],['4070371300','Arriendo Maquinaria'],['4070575000','Software / Hardware']];
 function downloadHistorial(tipo){genHistorialXlsx(tipo);}
 function genHistorialXlsx(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||f;var tl=(tipo==='mina'?'Mina':tipo==='planta'?'Planta':'Costos');
-  var ars=leafAreasOf(f,tipo||'all');
-  var head=['Mes',(tipo==='mina'?'Categoría':'Area'),'Sub area','Centro de costo','Ceco','Real','Budget'];var data=[head];
-  ars.forEach(function(a){var anc=ancestors(a);var area=anc.length?anc[anc.length-1].name:a.name;var subarea=(anc.length>=2?anc[0].name:'');
-    for(var m=0;m<12;m++){data.push([MESES[m]+' '+ANIO,area,subarea,a.name,(a.ceco||''),'','']);}});
-  if(!ars.length){for(var m0=0;m0<12;m0++)data.push([MESES[m0]+' '+ANIO,'','','','','','']);}
+  var esM=tipo==='mina';
+  var head=['Mes',(esM?'Categoría':'Area'),'Sub area','Centro de costo','Ceco','Real','Budget'];var data=[head];
+  for(var i=0;i<200;i++)data.push(['','','','','','','']);
   var wsH=XLSX.utils.aoa_to_sheet(data);wsH['!cols']=[{wch:13},{wch:16},{wch:22},{wch:30},{wch:14},{wch:12},{wch:12}];
-  var wsI=XLSX.utils.aoa_to_sheet([['MANTOS CONTROL 360 — Plantilla '+tl+' '+ANIO+' · '+fn],[''],['La plantilla ya trae la estructura oficial: una fila por '+(tipo==='mina'?'equipo':'área')+' y mes, con su Centro de costo y Ceco correctos.'],['1) Completa SOLO las columnas Real y Budget (en USD). No escribas nada más.'],['2) NO cambies el Ceco ni el orden de las columnas: el Ceco es la llave que reparte cada monto a su recuadro del organigrama.'],['3) Súbela en Configuración → Cargar Datos, eligiendo '+(tipo?tl:'Mina o Planta')+'. Cada fila cae en su equipo/área y suma solo a su cabeza de serie.']]);wsI['!cols']=[{wch:118}];
-  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,wsH,'Planilla '+ANIO);XLSX.utils.book_append_sheet(wb,wsI,'Instrucciones');
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,wsH,'Planilla '+ANIO);
   var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});offerDownload(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Plantilla_'+tl+'_'+f+'_'+ANIO+'.xlsx','plantilla '+tl);}
 function downloadOL(){const f=curFaena();const ars=leafAreasOf(f);const per=Math.min(12,MES_ACTUAL+1);const cat='OL'+(''+ANIO).slice(2)+(per<10?'0'+per:per);
   const head=['CATEGORY','RYEAR','POPER','RBUKRS','RCNTR','NOMBRE CECO','ÁREA','RACCT','CLACO','KSL','RKCUR'];const data=[head];
