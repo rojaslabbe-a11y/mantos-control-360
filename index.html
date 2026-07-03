@@ -240,6 +240,50 @@ h2.title{font-size:22px;margin:5px 0 4px}
 .navcard .track{height:7px;margin-bottom:9px}
 .navcard .nc-f{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:800}
 .navcard .nc-f .neg{color:#c0392b}.navcard .nc-f .pos{color:#1e8e54}
+/* ===== Organigrama de costos (CSS org-chart clásico: ul/li + conectores) ===== */
+.orgwrap{overflow-x:auto;padding:8px 2px 14px;-webkit-overflow-scrolling:touch}
+.tree{display:inline-flex;min-width:100%;justify-content:center}
+.tree ul{display:flex;justify-content:center;padding-top:22px;position:relative;margin:0;padding-left:0;list-style:none}
+.tree li{list-style:none;position:relative;padding:22px 11px 0;display:flex;flex-direction:column;align-items:center}
+.tree li::before,.tree li::after{content:'';position:absolute;top:0;right:50%;border-top:2px solid #ccd6e2;width:50%;height:22px}
+.tree li::after{right:auto;left:50%;border-left:2px solid #ccd6e2}
+.tree li:only-child::after,.tree li:only-child::before{display:none}
+.tree li:only-child{padding-top:0}
+.tree li:first-child::before,.tree li:last-child::after{border:0 none}
+.tree li:last-child::before{border-right:2px solid #ccd6e2;border-radius:0 7px 0 0}
+.tree li:first-child::after{border-radius:7px 0 0 0}
+.tree ul ul::before{content:'';position:absolute;top:0;left:50%;border-left:2px solid #ccd6e2;width:0;height:22px}
+.tree>ul{padding-top:0}
+.tree>ul>li::before,.tree>ul>li::after{display:none}
+.onode{position:relative;background:linear-gradient(160deg,#ffffff,#f2f7fc);border:1px solid rgba(18,44,82,.12);border-radius:14px;padding:12px 13px 11px;min-width:186px;max-width:230px;box-shadow:0 6px 16px rgba(24,56,104,.07);transition:.16s}
+.onode:hover{box-shadow:0 14px 28px rgba(24,56,104,.15);border-color:var(--copper2);transform:translateY(-2px)}
+.onode.on{border-color:#123a68;box-shadow:0 14px 30px rgba(10,25,55,.22)}
+.onode.root{background:linear-gradient(125deg,#123a68,#0c2140);border-color:transparent;min-width:236px;padding:15px 16px 14px;box-shadow:0 14px 30px rgba(10,25,55,.26)}
+.onode.root::after{content:"";position:absolute;left:0;top:0;right:0;height:4px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,#f0954a,#c25e1b)}
+.onode.root .on-name{color:#fff;font-size:15.5px;font-weight:900;letter-spacing:-.2px}
+.onode.root .on-sub{color:#9cc2ec}
+.onode.root .on-val{color:#fff;font-size:21px}
+.onode.root .on-val span{color:#9cc2ec}
+.on-top{display:flex;align-items:center;gap:9px}
+.on-name{font-weight:800;font-size:13px;color:#15273b;flex:1;text-align:left;line-height:1.22}
+.on-exp{width:24px;height:24px;flex:none;border-radius:7px;border:1px solid rgba(18,44,82,.16);background:#eef4fb;color:#3c5476;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.on-exp:hover{background:var(--copper);color:#fff;border-color:transparent}
+.onode.root .on-exp{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);color:#fff}
+.onode.root .on-exp:hover{background:var(--copper);border-color:transparent}
+.on-dot{width:7px;height:7px;border-radius:50%;background:#c25e1b;flex:none;margin:0 3px}
+.on-eye{width:27px;height:27px;flex:none;border-radius:8px;border:1px solid rgba(18,44,82,.16);background:#fff;color:#3c5476;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:.14s}
+.on-eye:hover{border-color:var(--copper2);color:#b85c1c}
+.on-eye.on{background:linear-gradient(135deg,#f0954a,#c25e1b);border-color:transparent;color:#fff}
+.onode.root .on-eye{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);color:#fff}
+.onode.root .on-eye.on{background:linear-gradient(135deg,#f0954a,#c25e1b)}
+.on-val{margin-top:9px;font-size:15px;font-weight:900;letter-spacing:-.3px;color:#12253a;text-align:left}
+.on-val span{font-size:11.5px;font-weight:700;color:#7f92a8}
+.on-val b{font-size:11.5px;font-weight:800;margin-left:2px}
+.on-val b.neg{color:#e2664f}.on-val b.pos{color:#2ea36a}
+.onode.root .on-val b.neg{color:#ff9d86}.onode.root .on-val b.pos{color:#5fd39a}
+.on-val.z{font-size:11.5px;font-weight:700;color:#9db0c6;font-style:italic}
+.on-sub{font-size:10.5px;color:#8798ac;font-weight:600;margin-top:6px;text-align:left;letter-spacing:.2px}
+.onode.root .on-sub{margin-top:6px}
 </style>
 </head>
 <body>
@@ -293,7 +337,7 @@ async function rest(path,method,body,prefer){const h=authHeaders();if(prefer)h.P
 async function rpc(fn,args){return rest('rpc/'+fn,'POST',args||{});}
 
 /* ===== Iconos ===== */
-const ICONS={dashboard:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',mina:'<path d="M3 21h18"/><path d="M3 21L11 7l3 5 2-3 5 12"/><path d="M14 4l5 3"/>',planta:'<path d="M3 21V11l5 3V11l5 3V8l5 3V21z"/><path d="M2 21h20"/>',budget:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>',informes:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',proyeccion:'<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>',usuarios:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/>',config:'<path d="M4 21v-6M4 11V3M12 21v-8M12 9V3M20 21v-4M20 13V3"/><path d="M2 15h4M10 9h4M18 17h4"/>',trash:'<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',power:'<path d="M12 2v9"/><path d="M18 6a9 9 0 1 1-12 0"/>',menu:'<path d="M3 6h18M3 12h18M3 18h18"/>',plus:'<path d="M12 5v14M5 12h14"/>',upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',mountain:'<path d="M3 20h18L13 6l-3 5-2-2z"/>',doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13 20 3"/><path d="M15 8l3 3M13 10l2 2"/>',refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',chev:'<path d="M9 6l6 6-6 6"/>',copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',wa:'<path d="M3 21l1.7-4.1A8.5 8.5 0 1 1 8.1 19.4z"/><path d="M8.9 8.7c.2-.4.4-.4.6-.4h.4c.2 0 .4 0 .6.4l.6 1.4c.1.2 0 .4-.1.5l-.4.5c-.1.1-.2.3-.1.5.3.6.8 1.2 1.4 1.6.2.1.4.1.5 0l.5-.5c.1-.1.3-.2.5-.1l1.4.6c.2.1.3.3.3.5 0 .6-.4 1.2-.9 1.4-.5.2-1.7.3-3.4-.7s-2.5-2.5-2.6-2.9c-.1-.4-.4-1.5.2-2.2z"/>'};
+const ICONS={dashboard:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',mina:'<path d="M3 21h18"/><path d="M3 21L11 7l3 5 2-3 5 12"/><path d="M14 4l5 3"/>',planta:'<path d="M3 21V11l5 3V11l5 3V8l5 3V21z"/><path d="M2 21h20"/>',budget:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>',informes:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',proyeccion:'<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>',usuarios:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/>',config:'<path d="M4 21v-6M4 11V3M12 21v-8M12 9V3M20 21v-4M20 13V3"/><path d="M2 15h4M10 9h4M18 17h4"/>',trash:'<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',power:'<path d="M12 2v9"/><path d="M18 6a9 9 0 1 1-12 0"/>',menu:'<path d="M3 6h18M3 12h18M3 18h18"/>',plus:'<path d="M12 5v14M5 12h14"/>',upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',mountain:'<path d="M3 20h18L13 6l-3 5-2-2z"/>',doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13 20 3"/><path d="M15 8l3 3M13 10l2 2"/>',refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',chev:'<path d="M9 6l6 6-6 6"/>',eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',minus:'<path d="M5 12h14"/>',copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',wa:'<path d="M3 21l1.7-4.1A8.5 8.5 0 1 1 8.1 19.4z"/><path d="M8.9 8.7c.2-.4.4-.4.6-.4h.4c.2 0 .4 0 .6.4l.6 1.4c.1.2 0 .4-.1.5l-.4.5c-.1.1-.2.3-.1.5.3.6.8 1.2 1.4 1.6.2.1.4.1.5 0l.5-.5c.1-.1.3-.2.5-.1l1.4.6c.2.1.3.3.3.5 0 .6-.4 1.2-.9 1.4-.5.2-1.7.3-3.4-.7s-2.5-2.5-2.6-2.9c-.1-.4-.4-1.5.2-2.2z"/>'};
 function ic(n,s){s=s||18;return '<svg class="ico" viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[n]||'')+'</svg>';}
 const LOGO='<svg viewBox="0 0 330 92" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto"><defs><linearGradient id="cu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaa063"/><stop offset="1" stop-color="#9c5b27"/></linearGradient></defs><path d="M66 8 L26 8 L4 46 L26 84 L66 84 L44 46 Z" fill="url(#cu)"/><rect x="84" y="22" width="3" height="48" fill="#b87333"/><text x="102" y="44" fill="#f4f7fa" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="30" letter-spacing="2">CAPSTONE</text><text x="102" y="76" fill="#cf7d3e" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="25" letter-spacing="6">COPPER</text></svg>';
 
@@ -613,33 +657,43 @@ function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{})
    '<div class="sectit"><span class="lft">Distribución de costo por área</span><span class="pill">Real YTD</span></div><div class="chartbox" style="height:300px">'+donut(dist.slice(0,9))+'</div>'+
    '<div class="sectit"><span class="lft">Proyección de cierre de año</span></div><div class="card"><div class="barrow"><div class="top"><b>Real proyectado</b><span class="n">'+fmtM(tot.proy)+' / '+fmtM(tot.bAnual)+'</span></div><div class="track"><div class="fill '+(tot.proy>tot.bAnual?'bad':'ok')+'" style="width:'+Math.min(100,tot.bAnual?tot.proy/tot.bAnual*100:0)+'%"></div></div></div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px"><div class="val" style="font-size:20px;font-weight:800">'+fmtM(tot.proy)+'</div><span class="tag '+(tot.devAnual>0?'bad':'ok')+'">'+(tot.devAnual>0?'+':'')+(tot.devAnual*100).toFixed(1)+'% vs budget</span></div></div>';}
 
-let AREA_PATH=[];
-function setAreaSel(v){AREA_PATH=v?[v]:[];render();}
-function areaGo(id){if(id==='__root')AREA_PATH=[];else if(id==='__up')AREA_PATH.pop();else AREA_PATH.push(id);render();}
-function areaGoTo(i){AREA_PATH=AREA_PATH.slice(0,i+1);render();}
-function costGo(tipo,id){AREA_PATH=id?[id]:[];CURRENT=(tipo==='mina'?'equipmina':'areasrep');buildNav();render();}
+let ORG_EXP={};let AREA_VIEW=null;
+function orgToggle(id){ORG_EXP[id]=!ORG_EXP[id];render();}
+function orgView(id){AREA_VIEW=(AREA_VIEW===id?null:id);render();}
+function setAreaSel(v){AREA_VIEW=v||null;render();}
+function costGo(tipo,id){AREA_VIEW=id||null;ORG_EXP={};var a=DB.areas.find(function(x){return x.id===id;});if(a){ancestors(a).forEach(function(n){ORG_EXP[n.id]=true;});}CURRENT=(tipo==='mina'?'equipmina':'areasrep');buildNav();render();}
 function viewAreaReport(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||'';
-  var esM=tipo==='mina';var ML=esM?'Equipos Mina':'Áreas Planta';var UNI=esM?'equipo':'área';
+  var esM=tipo==='mina';var ML=esM?'Equipos Mina':'Áreas Planta';var UNI=esM?'equipo':'área';var UNIS=esM?'equipos':'áreas';
   var all=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&inScope(a);});
-  if(!all.length)return '<div class="crumb">'+ic(esM?'mina':'planta',13)+' '+fn+'</div><h2 class="title">'+ML+'</h2>'+scopeBanner()+'<div class="empty">No hay '+UNI+'s cargados aún. Súbelos en Configuración → Cargar Datos.</div>';
-  AREA_PATH=(AREA_PATH||[]).filter(function(id){var a=DB.areas.find(function(x){return x.id===id;});return a&&a.faena===f&&a.tipo===tipo&&inScope(a);});
-  var curId=AREA_PATH.length?AREA_PATH[AREA_PATH.length-1]:null;
-  var cur=curId?DB.areas.find(function(x){return x.id===curId;}):null;
-  var childs=curId?kids(curId).filter(inScope):rootsOf(f,tipo);
-  var t,mon,scopeName;
-  if(cur){t=nodeTot(curId);mon=nodeMon(curId);scopeName=cur.name;}
-  else{t={bAcum:0,rAcum:0,bAnual:0,proy:0};var bb=Array(12).fill(0),rr=Array(12).fill(0);rootsOf(f,tipo).forEach(function(rt){var x=nodeTot(rt.id);t.bAcum+=x.bAcum;t.rAcum+=x.rAcum;t.bAnual+=x.bAnual;t.proy+=x.proy;var mm=nodeMon(rt.id);for(var m=0;m<12;m++){bb[m]+=mm.b[m];if(mm.r[m]!=null)rr[m]+=mm.r[m];}});mon={b:bb,r:rr.map(function(v,m){return m<=MES_ACTUAL?v:null;})};scopeName='Todos los '+UNI+'s';}
+  if(!all.length)return '<div class="crumb">'+ic(esM?'mina':'planta',13)+' '+fn+'</div><h2 class="title">'+ML+'</h2>'+scopeBanner()+'<div class="empty">No hay '+UNIS+' cargados aún. Súbelos en Configuración → Cargar Datos.</div>';
+  var roots=rootsOf(f,tipo);
+  if(AREA_VIEW){var av=DB.areas.find(function(x){return x.id===AREA_VIEW;});if(!av||av.faena!==f||av.tipo!==tipo||!inScope(av))AREA_VIEW=null;}
+  /* ===== Organigrama (árbol ul/li con conectores CSS) ===== */
+  function node(a){var kk=kids(a.id).filter(inScope);var exp=!!ORG_EXP[a.id];var viewing=AREA_VIEW===a.id;var hoja=isLeaf(a);var isRoot=!a.parent||!DB.areas.some(function(x){return x.id===a.parent;});
+    var x=nodeTot(a.id);var zero=(!x.rAcum&&!x.bAcum);var dv=x.bAcum?(x.rAcum-x.bAcum)/x.bAcum:0;
+    var sub=hoja?(a.ceco?'CECO '+a.ceco:UNI):(kk.length+' '+UNIS+(leaves(a.id).length!==kk.length?' · '+leaves(a.id).length+' en total':''));
+    var box='<div class="onode'+(isRoot?' root':'')+(viewing?' on':'')+'">'+
+      '<div class="on-top">'+(kk.length?'<button class="on-exp" onclick="orgToggle(\''+a.id+'\')" title="'+(exp?'Contraer':'Desplegar')+'">'+ic(exp?'minus':'plus',14)+'</button>':'<span class="on-dot"></span>')+
+      '<span class="on-name">'+a.name+'</span>'+
+      '<button class="on-eye'+(viewing?' on':'')+'" onclick="orgView(\''+a.id+'\')" title="Ver el detalle de este recuadro">'+ic('eye',15)+'</button></div>'+
+      '<div class="on-val'+(zero?' z':'')+'">'+(zero?'sin datos aún':fmtM(x.rAcum)+' <span>/ '+fmtM(x.bAcum)+'</span> <b class="'+(dv>0?'neg':'pos')+'">'+(dv>0?'+':'')+(dv*100).toFixed(0)+'%</b>')+'</div>'+
+      '<div class="on-sub">'+sub+'</div></div>';
+    var li='<li>'+box;
+    if(kk.length&&exp){li+='<ul>'+kk.map(node).join('')+'</ul>';}
+    return li+'</li>';}
+  var tree='<div class="orgwrap"><div class="tree"><ul>'+roots.map(node).join('')+'</ul></div></div>';
+  /* ===== Números del recuadro elegido (ojo) o consolidado ===== */
+  var target=AREA_VIEW?DB.areas.find(function(x){return x.id===AREA_VIEW;}):null;
+  var t,mon,scopeName,cecoLbl='';
+  if(target){t=nodeTot(target.id);mon=nodeMon(target.id);scopeName=target.name;cecoLbl=target.ceco?(' · CECO '+target.ceco):'';}
+  else{t={bAcum:0,rAcum:0,bAnual:0,proy:0};var bb=Array(12).fill(0),rr=Array(12).fill(0);roots.forEach(function(rt){var x=nodeTot(rt.id);t.bAcum+=x.bAcum;t.rAcum+=x.rAcum;t.bAnual+=x.bAnual;t.proy+=x.proy;var mm=nodeMon(rt.id);for(var m=0;m<12;m++){bb[m]+=mm.b[m];if(mm.r[m]!=null)rr[m]+=mm.r[m];}});mon={b:bb,r:rr.map(function(v,m){return m<=MES_ACTUAL?v:null;})};scopeName='Consolidado '+ML;}
   var ejec=t.bAcum?Math.round(t.rAcum/t.bAcum*100):0;var devY=t.bAcum?(t.rAcum-t.bAcum)/t.bAcum:0;var devA=t.bAnual?(t.proy-t.bAnual)/t.bAnual:0;
-  var bc='<span class="dtrail-item'+(curId?'':' cur')+'" onclick="areaGo(\'__root\')">'+ic(esM?'mina':'planta',13)+' '+ML+'</span>';
-  AREA_PATH.forEach(function(id,i){var a=DB.areas.find(function(x){return x.id===id;});var last=i===AREA_PATH.length-1;bc+='<span class="dtrail-sep">›</span><span class="dtrail-item'+(last?' cur':'')+'" onclick="areaGoTo('+i+')">'+(a?a.name:'')+'</span>';});
-  var cards=childs.map(function(a){var x=nodeTot(a.id);var dv=x.bAcum?(x.rAcum-x.bAcum)/x.bAcum:0;var pct=x.bAcum?Math.min(100,x.rAcum/x.bAcum*100):0;var cls=dv>0.03?'bad':dv<-0.03?'ok':'';var hoja=isLeaf(a);var nk=leaves(a.id).length;
-    return '<div class="navcard" onclick="areaGo(\''+a.id+'\')"><div class="nc-h"><b>'+a.name+'</b>'+(hoja?'<span class="nc-leaf">'+ic('doc',13)+'</span>':'<span class="nc-arrow">'+ic('chev',16)+'</span>')+'</div><div class="nc-v">'+fmtM(x.rAcum)+' <span class="nc-b">/ '+fmtM(x.bAcum)+'</span></div><div class="track"><div class="fill '+cls+'" style="width:'+pct+'%"></div></div><div class="nc-f"><span class="'+(dv>0?'neg':'pos')+'">'+(dv>0?'+':'')+(dv*100).toFixed(0)+'%</span><span class="muted">'+(hoja?(a.ceco?'CECO '+a.ceco:UNI):kids(a.id).length+' sub · '+nk+' '+UNI+'s')+'</span></div></div>';}).join('');
   var html='<div class="crumb">'+ic(esM?'mina':'planta',13)+' '+fn+'</div><h2 class="title">'+ML+'</h2>'+scopeBanner()+
-   '<div class="dtrail">'+bc+(curId?'<button class="btn sm ghost" style="margin-left:auto;width:auto" onclick="areaGo(\'__up\')">'+ic('chev',14)+' Subir un nivel</button>':'')+'</div>'+
-   '<div class="heroband"><div class="hb-t">'+(esM?'MINA':'PLANTA')+' · '+fn+(cur&&cur.ceco?' · CECO '+cur.ceco:'')+'</div><div class="hb-v">'+scopeName+'</div><div class="hb-s">Real YTD '+fmtM(t.rAcum)+' de '+fmtM(t.bAcum)+' budget · Ejecución '+ejec+'% · Desviación '+(devY>0?'+':'')+(devY*100).toFixed(1)+'%</div></div>'+
-   '<div class="statwrap"><div class="ministat"><div class="l">Real acumulado</div><div class="v">'+fmtM(t.rAcum)+'</div></div><div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(t.bAnual)+'</div></div><div class="ministat"><div class="l">Proyección cierre</div><div class="v">'+fmtM(t.proy)+'</div></div><div class="ministat"><div class="l">Desv. proyectada</div><div class="v" style="color:'+(devA>0?'#c0392b':'#1e8e54')+'">'+(devA>0?'+':'')+(devA*100).toFixed(1)+'%</div></div></div>';
-  if(childs.length){html+='<div class="sectit"><span class="lft">'+(curId?'Desglose de '+cur.name:'Grandes grupos')+'</span><span class="pill">'+childs.length+' '+(curId?'sub-'+UNI+'s':'grupos')+' · toca para entrar</span></div><div class="navgrid">'+cards+'</div>';}
-  html+='<div class="sectit"><span class="lft">Real vs Budget · mensual</span><span class="pill">'+scopeName+'</span></div><div class="chartbox">'+barChart(MESES,mon.b,mon.r)+'</div>'+
+   '<div class="sectit"><span class="lft">Organigrama de costos</span><span class="pill">despliega con + y pincha el ojo para ver números</span></div>'+tree+
+   '<div class="sectit"><span class="lft">'+(target?ic('eye',15)+' Números de: '+target.name:'Consolidado '+ML)+'</span><span class="pill">'+(target?(isLeaf(target)?UNI+(cecoLbl):'grupo · '+leaves(target.id).length+' '+UNIS):'todos los '+UNIS)+'</span></div>'+
+   '<div class="heroband"><div class="hb-t">'+(esM?'MINA':'PLANTA')+' · '+fn+cecoLbl+'</div><div class="hb-v">'+scopeName+'</div><div class="hb-s">Real YTD '+fmtM(t.rAcum)+' de '+fmtM(t.bAcum)+' budget · Ejecución '+ejec+'% · Desviación '+(devY>0?'+':'')+(devY*100).toFixed(1)+'%</div></div>'+
+   '<div class="statwrap"><div class="ministat"><div class="l">Real acumulado</div><div class="v">'+fmtM(t.rAcum)+'</div></div><div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(t.bAnual)+'</div></div><div class="ministat"><div class="l">Proyección cierre</div><div class="v">'+fmtM(t.proy)+'</div></div><div class="ministat"><div class="l">Desv. proyectada</div><div class="v" style="color:'+(devA>0?'#c0392b':'#1e8e54')+'">'+(devA>0?'+':'')+(devA*100).toFixed(1)+'%</div></div></div>'+
+   '<div class="sectit"><span class="lft">Real vs Budget · mensual</span><span class="pill">'+scopeName+'</span></div><div class="chartbox">'+barChart(MESES,mon.b,mon.r)+'</div>'+
    '<div class="sectit"><span class="lft">Costo acumulado</span><span class="pill">US$K</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(mon.b),cumReal(mon.r),'Budget acum.','Real acum.')+'</div>';
   var det='';for(var m=0;m<=MES_ACTUAL;m++){var bm=mon.b[m]||0;var rm=mon.r[m];var dm=(rm!=null&&bm)?((rm-bm)/bm):null;det+='<tr><td>'+MESES[m]+' '+ANIO+'</td><td>'+fmtK(bm)+'</td><td>'+(rm==null?'—':fmtK(rm))+'</td><td class="'+(dm==null?'':(dm>0?'neg':'pos'))+'">'+(dm==null?'—':(dm>0?'+':'')+(dm*100).toFixed(0)+'%')+'</td></tr>';}
   html+='<div class="sectit"><span class="lft">Detalle mensual</span><span class="pill">'+scopeName+'</span></div><div class="card nopad" style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mes</th><th>Budget</th><th>Real</th><th>Desv</th></tr></thead><tbody>'+det+'</tbody></table></div>';
@@ -664,8 +718,10 @@ function viewCostos(tipo){const f=curFaena();const t=faenaTotals(f,tipo);const a
    ):'')+
    '<div class="sectit"><span class="lft">Desglose por grupo · '+(tipo==='mina'?'Mina':'Planta')+'</span><span class="pill">toca para ver el detalle</span></div><div class="card">'+(bars||'<div class="empty">Sin '+(tipo==='mina'?'equipos':'áreas')+'</div>')+'</div>';}
 async function resetCostos(tipo){var f=curFaena();var ars=leafAreasOf(f,tipo);if(!ars.length)return toast('Sin áreas en '+(tipo==='mina'?'Mina':'Planta'));
-  if(!confirm('¿Poner en CERO todos los datos de '+(tipo==='mina'?'MINA':'PLANTA')+' de esta faena?\n\nSe borran Budget y Real cargados para volver a cargar el presupuesto desde cero. No se puede deshacer.'))return;
-  try{for(var i=0;i<ars.length;i++){var a=ars[i];await rest('mantos_costs?area_id=eq.'+a.id,'DELETE');DB.costs[a.id]={budget:Array(12).fill(0),real:Array(12).fill(null)};}buildNav();render();toast((tipo==='mina'?'Mina':'Planta')+' en cero — ya puedes cargar el presupuesto');}catch(e){toast('Error: '+e.message);}}
+  var TL=(tipo==='mina'?'MINA':'PLANTA');
+  if(!confirm('⚠️ Vas a REINICIAR '+TL+' a CERO.\n\nSe borran TODOS los Budget y Real cargados de '+TL+' ('+ars.length+' '+(tipo==='mina'?'equipos':'áreas')+'). La estructura del organigrama se mantiene, solo se vacían las cifras.\n\n¿Continuar?'))return;
+  if(!confirm('¿ESTÁS SEGURO, jefe? 🔴\n\nEsto NO se puede deshacer. Todas las cifras de '+TL+' volverán a CERO.\n\nPresiona Aceptar solo si de verdad quieres dejar '+TL+' en blanco para empezar de nuevo.'))return;
+  try{for(var i=0;i<ars.length;i++){var a=ars[i];await rest('mantos_costs?area_id=eq.'+a.id,'DELETE');var rows=[];for(var m=0;m<12;m++)rows.push({area_id:a.id,month:m,budget:0,real:null});await rest('mantos_costs','POST',rows);DB.costs[a.id]={budget:Array(12).fill(0),real:Array(12).fill(null)};}buildNav();render();toast(TL+' reiniciado a cero — listo para cargar');}catch(e){toast('Error: '+e.message);}}
 
 function editGrid(tipo){const f=curFaena();const ar=leafAreasOf(f,tipo);
   if(!ar.length)return '<div class="card"><div class="empty">Sin áreas.</div><div class="addrow"><input id="qa_name" placeholder="Nueva área"><button class="btn sm" onclick="quickAddArea(\''+f+'\',\''+(tipo==='all'?'mina':tipo)+'\')">'+ic('plus',15)+' Área</button></div></div>';
