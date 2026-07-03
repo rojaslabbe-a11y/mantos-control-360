@@ -1053,23 +1053,34 @@ function parseWorkbook(rows){
   let hr=0;for(let k=0;k<Math.min(10,rows.length);k++){const hh=(rows[k]||[]).map(x=>(''+x).toLowerCase());if(findCol(hh,COLSYN.mes)>=0&&(findCol(hh,COLSYN.real)>=0||findCol(hh,COLSYN.bud)>=0)){hr=k;break;}}
   const head=(rows[hr]||[]).map(h=>(''+h).toLowerCase().trim());const rawHead=(rows[hr]||[]).map(h=>(''+h).trim());
   const mesC=findCol(head,COLSYN.mes),realC=findCol(head,COLSYN.real),budC=findCol(head,COLSYN.bud);
-  const ac=detectAreaCols(head),areaC=ac.areaC,cecoC=ac.cecoC;
+  const ac=detectAreaCols(head),areaC=ac.areaC;
+  // Columna Ceco (código) — la llave para enganchar con el árbol sin aplanarlo
+  let cecoKeyC=head.findIndex(h=>h==='ceco'||/\bceco\b/.test(h));
+  if(cecoKeyC<0)cecoKeyC=ac.cecoC;
+  // Columna con el nombre del equipo/área ("Centro de costo")
+  let nameC=head.findIndex(h=>h.indexOf('centro de costo')>=0);
+  if(nameC<0)nameC=areaC;
+  const byCeco=cecoKeyC>=0;
   const col=i=>(i>=0&&rawHead[i]?rawHead[i]:'—');
-  if(mesC<0||(areaC<0&&cecoC<0))return {ok:false,reason:'No encontré columnas de <b>Mes</b> y <b>Área/Centro de Coste</b>. Revisa que la planilla tenga encabezados.'};
+  if(mesC<0||(!byCeco&&nameC<0&&areaC<0))return {ok:false,reason:'No encontré columnas de <b>Mes</b> y <b>Ceco/Centro de costo</b>. Revisa que la planilla tenga encabezados.'};
   if(realC<0&&budC<0)return {ok:false,reason:'No encontré columnas de <b>Real</b> ni <b>Budget/OL</b>.'};
   const agg={};let maxv=0,nrows=0;
   for(let i=hr+1;i<rows.length;i++){const row=rows[i];if(!row)continue;const m=monthIndex(row[mesC]);if(m<0)continue;
-    let g='';if(areaC>=0&&row[areaC]!=null)g=(''+row[areaC]).trim();if(!g&&cecoC>=0&&row[cecoC]!=null)g=(''+row[cecoC]).trim();if(!g)g='Sin área';
-    if(/^total|etiquetas|suma de|general/i.test(g))continue;
-    if(!agg[g])agg[g]={b:Array(12).fill(0),r:Array(12).fill(0),hb:Array(12).fill(false),hr:Array(12).fill(false)};
-    if(budC>=0){const bv=parseNum(row[budC]);if(bv!=null){agg[g].b[m]+=bv;agg[g].hb[m]=true;maxv=Math.max(maxv,Math.abs(bv));}}
-    if(realC>=0){const rv=parseNum(row[realC]);if(rv!=null){agg[g].r[m]+=rv;agg[g].hr[m]=true;maxv=Math.max(maxv,Math.abs(rv));}}
+    var ceco=(cecoKeyC>=0&&row[cecoKeyC]!=null)?(''+row[cecoKeyC]).trim():'';
+    var name=(nameC>=0&&row[nameC]!=null)?(''+row[nameC]).trim():'';
+    if(!name&&areaC>=0&&row[areaC]!=null)name=(''+row[areaC]).trim();
+    var key=(byCeco&&ceco)?ceco.toUpperCase():(name||ceco||'Sin área');
+    if(/^total|etiquetas|suma de|general/i.test(name)||/^total/i.test(key))continue;
+    if(!agg[key])agg[key]={name:(name||ceco),ceco:ceco,b:Array(12).fill(0),r:Array(12).fill(0),hb:Array(12).fill(false),hr:Array(12).fill(false)};
+    if(!agg[key].name&&name)agg[key].name=name;if(!agg[key].ceco&&ceco)agg[key].ceco=ceco;
+    if(budC>=0){const bv=parseNum(row[budC]);if(bv!=null){agg[key].b[m]+=bv;agg[key].hb[m]=true;maxv=Math.max(maxv,Math.abs(bv));}}
+    if(realC>=0){const rv=parseNum(row[realC]);if(rv!=null){agg[key].r[m]+=rv;agg[key].hr[m]=true;maxv=Math.max(maxv,Math.abs(rv));}}
     nrows++;}
   const factor=maxv>=100000?0.001:1;const names=Object.keys(agg);let cells=0;
   names.forEach(g=>{for(let m=0;m<12;m++)if(agg[g].hb[m]||agg[g].hr[m])cells++;});
-  const sample=names.map(g=>{let y=0;for(let m=0;m<12;m++)if(agg[g].hr[m])y+=agg[g].r[m];return {n:g,ytd:y*factor};}).sort((x,y)=>y.ytd-x.ytd).slice(0,6);
-  return {ok:true,agg,factor,unidad:factor===1?'kUSD':'USD → kUSD',nrows,nAreas:names.length,nCells:cells,sample,
-    cols:{mes:col(mesC),area:col(areaC>=0?areaC:cecoC),real:col(realC),bud:col(budC)},realC,budC};
+  const sample=names.map(g=>{let y=0;for(let m=0;m<12;m++)if(agg[g].hr[m])y+=agg[g].r[m];return {n:agg[g].name||g,ytd:y*factor};}).sort((x,y)=>y.ytd-x.ytd).slice(0,6);
+  return {ok:true,agg,byCeco,factor,unidad:factor===1?'kUSD':'USD → kUSD',nrows,nAreas:names.length,nCells:cells,sample,
+    cols:{mes:col(mesC),area:col(byCeco?cecoKeyC:(nameC>=0?nameC:areaC)),real:col(realC),bud:col(budC)},realC,budC};
 }
 function onImportFile(inp){const f=inp.files[0];if(f)readImportFile(f);}
 function onImportDrop(e){const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)readImportFile(f);}
@@ -1083,25 +1094,28 @@ function renderImportPreview(){const el=$('#importPreview');if(!el)return;if(!IM
     '<div class="mapgrid">'+mc('Mes',p.cols.mes,false)+mc('Área / CECO',p.cols.area,false)+mc('Real',p.cols.real,p.realC<0)+mc('Budget / OL',p.cols.bud,p.budC<0)+'</div>'+
     '<div class="statwrap" style="margin:4px 0 6px"><div class="ministat"><div class="l">Áreas detectadas</div><div class="v">'+p.nAreas+'</div></div><div class="ministat"><div class="l">Celdas de costo</div><div class="v">'+p.nCells+'</div></div><div class="ministat"><div class="l">Unidad</div><div class="v" style="font-size:15px">'+p.unidad+'</div></div></div>'+
     '<div class="sectit"><span class="lft">Vista previa · top áreas (YTD Real)</span></div><div class="card" style="background:#fff">'+(samp||'<div class="empty">Sin datos numéricos</div>')+'</div>'+
-    '<div class="banner" style="border-color:rgba(232,181,60,.45);background:rgba(232,181,60,.09);margin-top:10px">'+ic('refresh',18)+'<div>Al confirmar se <b>reemplaza todo lo de '+tl+'</b> con esta planilla — se borran las cifras anteriores para que el Dashboard quede <b>solo con estos datos</b>.</div></div>'+
-    '<div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="confirmImport()">'+ic('check',16)+' Confirmar y reemplazar '+tl+'</button><button class="btn ghost" style="width:auto" onclick="IMPORT=null;renderImportPreview()">Cancelar</button></div></div>';
+    '<div class="banner" style="border-color:rgba(46,163,106,.4);background:rgba(46,163,106,.08);margin-top:10px">'+ic('shield',18)+'<div>Al confirmar, las cifras se <b>enganchan por Ceco</b> a cada equipo/área. El <b>organigrama se mantiene intacto</b> — solo se actualizan los números (los anteriores se reemplazan, no se suman).</div></div>'+
+    '<div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="confirmImport()">'+ic('check',16)+' Confirmar y cargar '+tl+'</button><button class="btn ghost" style="width:auto" onclick="IMPORT=null;renderImportPreview()">Cancelar</button></div></div>';
 }
+function isLeafArea(a){return !DB.areas.some(function(x){return x.parent===a.id;});}
 async function confirmImport(){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPORT.parsed;const f=curFaena();const tipo=($('#xls_tipo')&&$('#xls_tipo').value)||'mina';const tl=(tipo==='mina'?'Mina':'Planta');
-  toast('Reemplazando datos de '+tl+'…');
-  /* 1) borrar TODO lo anterior de este mundo (para que quede solo lo nuevo, sin sumar cifras viejas) */
-  var prev=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo;});
-  try{for(var i=0;i<prev.length;i++){await rest('mantos_costs?area_id=eq.'+prev[i].id,'DELETE');DB.costs[prev[i].id]={budget:Array(12).fill(0),real:Array(12).fill(null)};}}catch(e){}
-  /* 2) cargar la planilla nueva */
-  const ups=[];let created=0,groups=0;var usedIds={};
-  for(const g of Object.keys(p.agg)){groups++;let area=DB.areas.find(a=>a.faena===f&&a.tipo===tipo&&a.name.toLowerCase()===g.toLowerCase());
-    if(!area){const id=uid('a');area={id:id,faena:f,tipo:tipo,name:g};DB.areas.push(area);DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};try{await rest('mantos_areas','POST',{id:id,faena:f,tipo:tipo,name:g});}catch(e){}created++;}
-    usedIds[area.id]=1;const c=DB.costs[area.id];const A=p.agg[g];
-    for(let m=0;m<12;m++){let ch=false;if(A.hb[m]){c.budget[m]=A.b[m]*p.factor;ch=true;}if(A.hr[m]){c.real[m]=A.r[m]*p.factor;ch=true;}if(ch)ups.push({area_id:area.id,month:m,budget:c.budget[m]||0,real:c.real[m]});}}
-  /* 3) eliminar áreas viejas de este mundo que NO venían en la planilla nueva */
-  var stale=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&!usedIds[a.id];});
-  try{for(var j=0;j<stale.length;j++){await rest('mantos_areas?id=eq.'+stale[j].id,'DELETE');delete DB.costs[stale[j].id];}}catch(e){}
-  DB.areas=DB.areas.filter(function(a){return !(a.faena===f&&a.tipo===tipo&&!usedIds[a.id]);});
-  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;buildNav();render();toast(tl+' reemplazado: '+groups+' áreas · '+ups.length+' celdas (datos nuevos)');}catch(e){toast('Error: '+e.message);}}
+  toast('Cargando datos de '+tl+'…');
+  /* 1) poner en CERO solo las HOJAS de este mundo — mantiene el árbol intacto */
+  var leavesT=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&isLeafArea(a);});
+  leavesT.forEach(function(a){DB.costs[a.id]={budget:Array(12).fill(0),real:Array(12).fill(null)};});
+  /* 2) enganchar cada grupo de la planilla a su HOJA por Ceco (o por nombre); nunca se borra estructura */
+  let matched=0,createdN=0;var noMatch=[];
+  for(const key of Object.keys(p.agg)){var G=p.agg[key];var target=null;
+    if(p.byCeco&&G.ceco){var gc=(''+G.ceco).toUpperCase().trim();target=DB.areas.find(function(a){return a.faena===f&&a.tipo===tipo&&a.ceco&&(''+a.ceco).toUpperCase().trim()===gc;});}
+    if(!target&&G.name){var gn=(''+G.name).toLowerCase().trim();target=DB.areas.find(function(a){return a.faena===f&&a.tipo===tipo&&isLeafArea(a)&&a.name.toLowerCase().trim()===gn;});}
+    if(!target){var id=uid('n');target={id:id,faena:f,tipo:tipo,name:(G.name||G.ceco||'Sin asignar'),parent:null,nivel:0,orden:99,ceco:(G.ceco||null)};DB.areas.push(target);DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};try{await rest('mantos_areas','POST',target);}catch(e){}createdN++;noMatch.push(target.name);}
+    else matched++;
+    var c=DB.costs[target.id]||(DB.costs[target.id]={budget:Array(12).fill(0),real:Array(12).fill(null)});
+    for(let m=0;m<12;m++){if(G.hb[m])c.budget[m]=G.b[m]*p.factor;if(G.hr[m])c.real[m]=G.r[m]*p.factor;}}
+  /* 3) guardar en la nube TODAS las celdas de las hojas (refleja cero + lo nuevo, sin sumar lo viejo) */
+  const ups=[];var allLeaves=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&isLeafArea(a);});
+  allLeaves.forEach(function(a){var c=DB.costs[a.id]||{budget:Array(12).fill(0),real:Array(12).fill(null)};for(let m=0;m<12;m++)ups.push({area_id:a.id,month:m,budget:c.budget[m]||0,real:(c.real[m]==null?null:c.real[m])});});
+  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;buildNav();render();toast(tl+' cargado: '+matched+' enganchados por Ceco'+(createdN?' · '+createdN+' nuevos sin match':''));}catch(e){toast('Error: '+e.message);}}
 function cfgSubir(){const f=curFaena();const ars=leafAreasOf(f);const opts=ars.map(a=>{var anc=ancestors(a).map(function(x){return x.name;}).reverse();return '<option value="'+a.id+'">'+(anc.length?anc.join(' › ')+' › ':'')+a.name+' ('+(a.tipo==='mina'?'Mina':'Planta')+')</option>';}).join('');
   return '<p class="muted" style="line-height:1.6">Elige el área (existente o nueva), sube tu informe Excel y la plataforma lo convierte en dashboard asociado a esa área, en la nube.</p>'+
    '<div class="card"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('upload',16)+' Subir informe a un área</span></div>'+
