@@ -220,6 +220,26 @@ h2.title{font-size:22px;margin:5px 0 4px}
 .heroband .hb-t{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#9cc2ec;font-weight:800}
 .heroband .hb-v{font-size:27px;font-weight:900;letter-spacing:-.6px;margin-top:4px}
 .heroband .hb-s{font-size:12.5px;color:#bcd3ee;margin-top:4px}
+/* ===== Drill-down árbol de áreas / equipos ===== */
+.dtrail{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:4px 0 14px}
+.dtrail-item{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;background:#fff;border:1px solid rgba(18,44,82,.12);cursor:pointer;color:#5d738c;font-weight:700;font-size:12.5px;transition:.15s}
+.dtrail-item:hover{color:#b85c1c;border-color:var(--copper2);transform:translateY(-1px)}
+.dtrail-item.cur{background:linear-gradient(120deg,#123a68,#0c2140);color:#eaf2fb;border-color:transparent;box-shadow:0 6px 16px rgba(10,25,55,.22)}
+.dtrail-item.cur .ico{color:#f0954a}
+.dtrail-sep{color:#9db0c6;font-weight:700;margin:0 1px}
+.navgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px;margin:8px 0 4px}
+.navcard{background:linear-gradient(160deg,#ffffff,#f2f7fc);border:1px solid rgba(18,44,82,.10);border-radius:16px;padding:15px 16px 14px;cursor:pointer;transition:.18s;box-shadow:0 6px 16px rgba(24,56,104,.06);position:relative;overflow:hidden}
+.navcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#f0954a,#c25e1b)}
+.navcard:hover{transform:translateY(-3px);box-shadow:0 16px 30px rgba(24,56,104,.15);border-color:var(--copper2)}
+.navcard .nc-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+.navcard .nc-h b{font-size:13.5px;color:#15273b;line-height:1.25}
+.navcard .nc-arrow{color:#c25e1b;display:inline-flex;flex:none}
+.navcard .nc-leaf{color:#9db0c6;display:inline-flex;flex:none}
+.navcard .nc-v{font-size:17px;font-weight:900;letter-spacing:-.4px;color:#12253a;margin-bottom:9px}
+.navcard .nc-v .nc-b{font-size:12px;font-weight:700;color:#5d738c}
+.navcard .track{height:7px;margin-bottom:9px}
+.navcard .nc-f{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:800}
+.navcard .nc-f .neg{color:#c0392b}.navcard .nc-f .pos{color:#1e8e54}
 </style>
 </head>
 <body>
@@ -247,6 +267,7 @@ h2.title{font-size:22px;margin:5px 0 4px}
     <nav class="sb-nav" id="nav"></nav>
     <div class="sb-user"><div class="who"><b id="tb_name">—</b><span id="tb_role">—</span></div>
       <button class="iconbtn" onclick="refreshData()" title="Actualizar datos" id="refBtn"></button>
+      <button class="iconbtn" onclick="clearCache()" title="Limpiar caché · traer la última versión" id="cacheBtn"></button>
       <button class="iconbtn" onclick="logout()" title="Salir" id="logoutBtn"></button></div>
   </aside>
   <div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar(false)"></div>
@@ -272,12 +293,12 @@ async function rest(path,method,body,prefer){const h=authHeaders();if(prefer)h.P
 async function rpc(fn,args){return rest('rpc/'+fn,'POST',args||{});}
 
 /* ===== Iconos ===== */
-const ICONS={dashboard:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',mina:'<path d="M3 21h18"/><path d="M3 21L11 7l3 5 2-3 5 12"/><path d="M14 4l5 3"/>',planta:'<path d="M3 21V11l5 3V11l5 3V8l5 3V21z"/><path d="M2 21h20"/>',budget:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>',informes:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',proyeccion:'<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>',usuarios:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/>',config:'<path d="M4 21v-6M4 11V3M12 21v-8M12 9V3M20 21v-4M20 13V3"/><path d="M2 15h4M10 9h4M18 17h4"/>',trash:'<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',power:'<path d="M12 2v9"/><path d="M18 6a9 9 0 1 1-12 0"/>',menu:'<path d="M3 6h18M3 12h18M3 18h18"/>',plus:'<path d="M12 5v14M5 12h14"/>',upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',mountain:'<path d="M3 20h18L13 6l-3 5-2-2z"/>',doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13 20 3"/><path d="M15 8l3 3M13 10l2 2"/>',refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',wa:'<path d="M3 21l1.7-4.1A8.5 8.5 0 1 1 8.1 19.4z"/><path d="M8.9 8.7c.2-.4.4-.4.6-.4h.4c.2 0 .4 0 .6.4l.6 1.4c.1.2 0 .4-.1.5l-.4.5c-.1.1-.2.3-.1.5.3.6.8 1.2 1.4 1.6.2.1.4.1.5 0l.5-.5c.1-.1.3-.2.5-.1l1.4.6c.2.1.3.3.3.5 0 .6-.4 1.2-.9 1.4-.5.2-1.7.3-3.4-.7s-2.5-2.5-2.6-2.9c-.1-.4-.4-1.5.2-2.2z"/>'};
+const ICONS={dashboard:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',mina:'<path d="M3 21h18"/><path d="M3 21L11 7l3 5 2-3 5 12"/><path d="M14 4l5 3"/>',planta:'<path d="M3 21V11l5 3V11l5 3V8l5 3V21z"/><path d="M2 21h20"/>',budget:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>',informes:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',proyeccion:'<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>',usuarios:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/>',config:'<path d="M4 21v-6M4 11V3M12 21v-8M12 9V3M20 21v-4M20 13V3"/><path d="M2 15h4M10 9h4M18 17h4"/>',trash:'<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',power:'<path d="M12 2v9"/><path d="M18 6a9 9 0 1 1-12 0"/>',menu:'<path d="M3 6h18M3 12h18M3 18h18"/>',plus:'<path d="M12 5v14M5 12h14"/>',upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l4 4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',mountain:'<path d="M3 20h18L13 6l-3 5-2-2z"/>',doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13 20 3"/><path d="M15 8l3 3M13 10l2 2"/>',refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',chev:'<path d="M9 6l6 6-6 6"/>',copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',wa:'<path d="M3 21l1.7-4.1A8.5 8.5 0 1 1 8.1 19.4z"/><path d="M8.9 8.7c.2-.4.4-.4.6-.4h.4c.2 0 .4 0 .6.4l.6 1.4c.1.2 0 .4-.1.5l-.4.5c-.1.1-.2.3-.1.5.3.6.8 1.2 1.4 1.6.2.1.4.1.5 0l.5-.5c.1-.1.3-.2.5-.1l1.4.6c.2.1.3.3.3.5 0 .6-.4 1.2-.9 1.4-.5.2-1.7.3-3.4-.7s-2.5-2.5-2.6-2.9c-.1-.4-.4-1.5.2-2.2z"/>'};
 function ic(n,s){s=s||18;return '<svg class="ico" viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[n]||'')+'</svg>';}
 const LOGO='<svg viewBox="0 0 330 92" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto"><defs><linearGradient id="cu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaa063"/><stop offset="1" stop-color="#9c5b27"/></linearGradient></defs><path d="M66 8 L26 8 L4 46 L26 84 L66 84 L44 46 Z" fill="url(#cu)"/><rect x="84" y="22" width="3" height="48" fill="#b87333"/><text x="102" y="44" fill="#f4f7fa" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="30" letter-spacing="2">CAPSTONE</text><text x="102" y="76" fill="#cf7d3e" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="25" letter-spacing="6">COPPER</text></svg>';
 
-const MODULES={dashboard:{name:'Dashboard General'},cierre:{name:'Cierre de Mes'},mina:{name:'Costos Mina'},planta:{name:'Costos Planta'},areasrep:{name:'Informe por Área'},budget:{name:'Budget'},informes:{name:'Informes'},proyeccion:{name:'Proyección Anual'},usuarios:{name:'Perfiles de Cargo'},claves:{name:'Generar Claves de Acceso'},config:{name:'Configuración de Informes'}};
-const MODICON={dashboard:'dashboard',cierre:'doc',mina:'mina',planta:'planta',areasrep:'informes',budget:'budget',informes:'informes',proyeccion:'proyeccion',usuarios:'usuarios',claves:'key',config:'config'};
+const MODULES={dashboard:{name:'Dashboard General'},cierre:{name:'Cierre de Mes'},mina:{name:'Costos Mina'},planta:{name:'Costos Planta'},areasrep:{name:'Áreas Planta'},equipmina:{name:'Equipos Mina'},budget:{name:'Budget'},informes:{name:'Informes'},proyeccion:{name:'Proyección Anual'},usuarios:{name:'Perfiles de Cargo'},claves:{name:'Generar Claves de Acceso'},config:{name:'Configuración de Informes'}};
+const MODICON={dashboard:'dashboard',cierre:'doc',mina:'mina',planta:'planta',areasrep:'planta',equipmina:'mina',budget:'budget',informes:'informes',proyeccion:'proyeccion',usuarios:'usuarios',claves:'key',config:'config'};
 const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MES_ACTUAL=5, ANIO=2026;
@@ -316,7 +337,16 @@ function can(m){return perms().indexOf(m)>=0;}
 function canEdit(){const r=roleOf(SESSION);return !(r&&r.view_only);}
 function isAdmin(){const r=roleOf(SESSION);return !!(r&&(r.id==='r0'||(r.perms||[]).indexOf('config')>=0||(r.perms||[]).indexOf('usuarios')>=0));}
 function curFaena(){return $('#mineSel')?$('#mineSel').value:'mb';}
-function areasOf(f,t){return DB.areas.filter(a=>a.faena===f&&(!t||t==='all'||a.tipo===t)&&(!SCOPE||SCOPE.indexOf(a.id)>=0));}
+function areasOf(f,t){return DB.areas.filter(a=>a.faena===f&&(!t||t==='all'||a.tipo===t)&&inScope(a));}
+function kids(id){return DB.areas.filter(function(a){return a.parent===id;}).sort(function(x,y){return (x.orden||0)-(y.orden||0)||String(x.name||'').localeCompare(String(y.name||''));});}
+function isLeaf(a){return !DB.areas.some(function(x){return x.parent===a.id;});}
+function leaves(id){var a=DB.areas.find(function(x){return x.id===id;});if(!a)return [];if(isLeaf(a))return [a];var out=[];kids(id).forEach(function(k){out=out.concat(leaves(k.id));});return out;}
+function ancestors(a){var out=[],p=a&&a.parent,g=0;while(p&&g++<30){var n=DB.areas.find(function(x){return x.id===p;});if(!n)break;out.push(n);p=n.parent;}return out;}
+function inScope(a){if(!SCOPE||!SCOPE.length)return true;if(SCOPE.indexOf(a.id)>=0)return true;return ancestors(a).some(function(x){return SCOPE.indexOf(x.id)>=0;});}
+function rootsOf(f,t){return DB.areas.filter(function(a){return a.faena===f&&(!t||t==='all'||a.tipo===t)&&inScope(a)&&(!a.parent||!DB.areas.some(function(x){return x.id===a.parent;}));}).sort(function(x,y){return (x.orden||0)-(y.orden||0)||String(x.name||'').localeCompare(String(y.name||''));});}
+function leafAreasOf(f,t){return areasOf(f,t).filter(isLeaf);}
+function nodeTot(id){var ls=leaves(id);var o={bAcum:0,rAcum:0,bAnual:0,proy:0};ls.forEach(function(a){var x=areaTotals(a.id);o.bAcum+=x.bAcum;o.rAcum+=x.rAcum;o.bAnual+=x.bAnual;o.proy+=x.proy;});o.dev=o.bAcum?(o.rAcum-o.bAcum)/o.bAcum:0;o.devAnual=o.bAnual?(o.proy-o.bAnual)/o.bAnual:0;return o;}
+function nodeMon(id){var ls=leaves(id);var b=Array(12).fill(0),r=Array(12).fill(0);ls.forEach(function(a){var c=C(a.id);for(var m=0;m<12;m++){b[m]+=c.budget[m]||0;if(c.real[m]!=null)r[m]+=c.real[m];}});return{b:b,r:r.map(function(v,m){return m<=MES_ACTUAL?v:null;})};}
 function scopeBanner(){if(!SCOPE||!SCOPE.length)return '';var names=SCOPE.map(function(id){var a=DB.areas.find(function(x){return x.id===id;});return a?a.name:null;}).filter(Boolean);if(!names.length)return '';return '<div class="banner" style="margin-bottom:12px">'+ic('shield',18)+'<div>Tu vista personalizada · <b style="color:var(--copper2)">'+names.join(' · ')+'</b></div></div>';}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function modName(id){return MODULES[id]?MODULES[id].name:(((DB.modules||[]).find(m=>m.id===id)||{}).name||'');}
@@ -324,8 +354,8 @@ function modName(id){return MODULES[id]?MODULES[id].name:(((DB.modules||[]).find
 /* ===== Cálculos ===== */
 function C(id){return DB.costs[id]||{budget:Array(12).fill(0),real:Array(12).fill(null)};}
 function areaTotals(id){const c=C(id);let bA=0,rA=0,bAn=0;for(let m=0;m<12;m++){bAn+=c.budget[m]||0;if(m<=MES_ACTUAL){bA+=c.budget[m]||0;rA+=c.real[m]||0;}}const f=bA?rA/bA:1;let p=rA;for(let m=MES_ACTUAL+1;m<12;m++)p+=Math.round((c.budget[m]||0)*((f+1)/2));return{bAcum:bA,rAcum:rA,bAnual:bAn,proy:p};}
-function faenaTotals(f,t){const ar=areasOf(f,t);let o={bAcum:0,rAcum:0,bAnual:0,proy:0};ar.forEach(a=>{const x=areaTotals(a.id);o.bAcum+=x.bAcum;o.rAcum+=x.rAcum;o.bAnual+=x.bAnual;o.proy+=x.proy;});o.dev=o.bAcum?(o.rAcum-o.bAcum)/o.bAcum:0;o.devAnual=o.bAnual?(o.proy-o.bAnual)/o.bAnual:0;return o;}
-function monthly(f,t){const ar=areasOf(f,t);const b=Array(12).fill(0),r=Array(12).fill(0);ar.forEach(a=>{const c=C(a.id);for(let m=0;m<12;m++){b[m]+=c.budget[m]||0;if(c.real[m]!=null)r[m]+=c.real[m];}});return{b:b,r:r.map((v,m)=>m<=MES_ACTUAL?v:null)};}
+function faenaTotals(f,t){const ar=leafAreasOf(f,t);let o={bAcum:0,rAcum:0,bAnual:0,proy:0};ar.forEach(a=>{const x=areaTotals(a.id);o.bAcum+=x.bAcum;o.rAcum+=x.rAcum;o.bAnual+=x.bAnual;o.proy+=x.proy;});o.dev=o.bAcum?(o.rAcum-o.bAcum)/o.bAcum:0;o.devAnual=o.bAnual?(o.proy-o.bAnual)/o.bAnual:0;return o;}
+function monthly(f,t){const ar=leafAreasOf(f,t);const b=Array(12).fill(0),r=Array(12).fill(0);ar.forEach(a=>{const c=C(a.id);for(let m=0;m<12;m++){b[m]+=c.budget[m]||0;if(c.real[m]!=null)r[m]+=c.real[m];}});return{b:b,r:r.map((v,m)=>m<=MES_ACTUAL?v:null)};}
 
 /* ===== Gráfico SVG (sin librerías) ===== */
 let CHART_Q=[],CHART_INST=[],CHART_N=0;
@@ -424,6 +454,11 @@ async function fetchAll(){
   DB.dataUpdated=costs.reduce(function(m,c){return (c.updated_at&&(!m||c.updated_at>m))?c.updated_at:m;},null);
 }
 async function refreshData(){const b=$('#refBtn');b.innerHTML='<span class="spin"></span>';try{await fetchAll();render();toast('Datos actualizados');}catch(e){toast('Error al actualizar');}b.innerHTML=ic('refresh',17);}
+function clearCache(){if(!confirm('¿Limpiar la caché y traer la última versión de la plataforma? Se recargará la página.'))return;
+  try{if('caches' in window){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}}catch(e){}
+  try{if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});});}}catch(e){}
+  try{toast('Limpiando caché…');}catch(e){}
+  setTimeout(function(){location.replace(location.pathname+'?v='+Date.now());},500);}
 
 /* ===== NAV / RENDER ===== */
 function navItem(id,icon,name){return '<div class="sb-item '+(id===CURRENT?'on':'')+'" onclick="go(\''+id+'\')"><span class="ni">'+ic(icon)+'</span><span>'+name+'</span></div>';}
@@ -435,20 +470,20 @@ function go(m){if(!can(m))return;CURRENT=m;buildNav();render();toggleSidebar(fal
 function fmtDateShort(s){try{return new Date(s).toLocaleString('es-CL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}}
 function render(){if(!SESSION)return;$('#tb_name').textContent=SESSION.name;$('#tb_role').textContent=(roleOf(SESSION)||{}).name||'';$('#tbTitle').textContent=modName(CURRENT);var _u=$('#tbUpd');if(_u)_u.innerHTML=DB.dataUpdated?(ic('clock',13)+'<span>Datos al '+fmtDateShort(DB.dataUpdated)+'</span>'):'';
   const cm=(DB.modules||[]).find(m=>m.id===CURRENT);
-  const fns={dashboard:viewDashboard,cierre:viewCierre,mina:function(){return viewCostos('mina');},planta:function(){return viewCostos('planta');},areasrep:viewAreaReport,budget:viewBudget,informes:viewInformes,proyeccion:viewProyeccion,usuarios:viewUsuarios,claves:viewClaves,config:viewConfig};
+  const fns={dashboard:viewDashboard,cierre:viewCierre,mina:function(){return viewCostos('mina');},planta:function(){return viewCostos('planta');},areasrep:function(){return viewAreaReport('planta');},equipmina:function(){return viewAreaReport('mina');},budget:viewBudget,informes:viewInformes,proyeccion:viewProyeccion,usuarios:viewUsuarios,claves:viewClaves,config:viewConfig};
   CHART_Q=[];var sb=(ADMIN_MODS.indexOf(CURRENT)<0&&!cm)?scopeBanner():'';$('#viewport').innerHTML=sb+(cm?viewCustom(cm):((fns[CURRENT]||viewDashboard)()));mountCharts();}
 
 /* ===== Vistas ===== */
 /* ===== Cierre de Mes (dashboard ejecutivo automático) ===== */
 let CIERRE_MES=Math.max(0,MES_ACTUAL-1);
 function setCierreMes(v){CIERRE_MES=+v;render();}
-function monthTot(f,tipo,m){const ar=areasOf(f,tipo);let r=0,b=0,hasR=false;ar.forEach(a=>{const c=C(a.id);b+=c.budget[m]||0;if(c.real[m]!=null){r+=c.real[m];hasR=true;}});return {r:r,b:b,hasR:hasR};}
+function monthTot(f,tipo,m){const ar=leafAreasOf(f,tipo);let r=0,b=0,hasR=false;ar.forEach(a=>{const c=C(a.id);b+=c.budget[m]||0;if(c.real[m]!=null){r+=c.real[m];hasR=true;}});return {r:r,b:b,hasR:hasR};}
 function ytdTot(f,tipo,m){let r=0,b=0;for(let k=0;k<=m;k++){const t=monthTot(f,tipo,k);r+=t.r;b+=t.b;}return {r:r,b:b};}
 function viewCierre(){const f=curFaena();const m=Math.min(11,Math.max(0,CIERRE_MES));const fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';
   const tot=monthTot(f,null,m),ytd=ytdTot(f,null,m),mina=monthTot(f,'mina',m),planta=monthTot(f,'planta',m);
   const ejec=tot.b?tot.r/tot.b*100:0;const devM=tot.b?(tot.r-tot.b)/tot.b:0;const devY=ytd.b?(ytd.r-ytd.b)/ytd.b:0;
   const sb=[],sr=[];let ab=0,arr=0;for(let k=0;k<=m;k++){const t=monthTot(f,null,k);ab+=t.b;arr+=t.r;sb.push(ab);sr.push(arr);}const labels=MESES.slice(0,m+1);
-  let areas=areasOf(f).map(a=>{const c=C(a.id);const r=c.real[m],b=c.budget[m]||0;const dv=b?((r||0)-b)/b:0;return {n:a.name,tipo:a.tipo,r:r,b:b,dv:dv,has:(r!=null||b>0)};}).filter(x=>x.has);
+  let areas=leafAreasOf(f).map(a=>{const c=C(a.id);const r=c.real[m],b=c.budget[m]||0;const dv=b?((r||0)-b)/b:0;return {n:a.name,tipo:a.tipo,r:r,b:b,dv:dv,has:(r!=null||b>0)};}).filter(x=>x.has);
   areas.sort((x,y)=>y.dv-x.dv);
   const sem=areas.map(a=>{const cls=a.r==null?'warn':(a.dv>0.05?'bad':a.dv>0?'warn':'ok');const lab=a.r==null?'sin real':(a.dv>0.05?'Sobre':a.dv>0?'Límite':'Bajo budget');
     const bg=cls==='bad'?'rgba(231,76,60,.14)':cls==='warn'?'rgba(232,181,60,.16)':'rgba(46,204,113,.14)';const fg=cls==='bad'?'#c0392b':cls==='warn'?'#b8860b':'#1e8e54';
@@ -478,7 +513,7 @@ function buildCierrePPT(){
   var mFull=(MES_FULL[m]||MESES[m]);var mCap=mFull.charAt(0).toUpperCase()+mFull.slice(1);
   var tot=monthTot(f,null,m),ytd=ytdTot(f,null,m),mina=monthTot(f,'mina',m),planta=monthTot(f,'planta',m);
   var ejec=tot.b?Math.round(tot.r/tot.b*100):0;var devM=tot.b?(tot.r-tot.b)/tot.b:0;var devY=ytd.b?(ytd.r-ytd.b)/ytd.b:0;
-  var areas=areasOf(f).map(function(a){var c=C(a.id);return {n:a.name,r:c.real[m]||0,b:c.budget[m]||0};}).filter(function(x){return x.r||x.b;}).sort(function(x,y){return y.r-x.r;}).slice(0,10);
+  var areas=leafAreasOf(f).map(function(a){var c=C(a.id);return {n:a.name,r:c.real[m]||0,b:c.budget[m]||0};}).filter(function(x){return x.r||x.b;}).sort(function(x,y){return y.r-x.r;}).slice(0,10);
   var sb=[],sr=[],labs=[];for(var k=0;k<=m;k++){var t=monthTot(f,null,k);sb.push(Math.round((sb.length?sb[sb.length-1]:0)+t.b));sr.push(Math.round((sr.length?sr[sr.length-1]:0)+t.r));labs.push(MESES[k]);}
   var mUSD=function(v){return 'US$'+((v||0)/1000).toFixed(1)+'M';};
   var P=new PptxGenJS();P.layout='LAYOUT_WIDE';P.author='Mantos Control 360';
@@ -563,7 +598,7 @@ let DASH_VIEW='all';
 function setDashView(v){DASH_VIEW=v;render();}
 function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';const view=(DASH_VIEW==='mina'||DASH_VIEW==='planta')?DASH_VIEW:'all';const filt=view==='all'?null:view;const vlabel=view==='mina'?'Mina':view==='planta'?'Planta':'Consolidado';const tot=faenaTotals(f,filt),mi=faenaTotals(f,'mina'),pl=faenaTotals(f,'planta');const s=monthly(f,filt);const sm=monthly(f,'mina'),sp=monthly(f,'planta');
   const dev=(tot.dev>0?'+':'')+(tot.dev*100).toFixed(1)+'%';
-  let ar=areasOf(f,filt);let dist=ar.map(a=>{const t=areaTotals(a.id);return {n:a.name,v:t.rAcum};}).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);const mx=Math.max(1,...dist.map(d=>d.v));
+  let ar=rootsOf(f,filt);let dist=ar.map(a=>{const t=nodeTot(a.id);return {n:a.name,v:t.rAcum};}).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);const mx=Math.max(1,...dist.map(d=>d.v));
   return '<div class="crumb">'+ic('dashboard',13)+' Faena · '+fn+' · '+vlabel+'</div><h2 class="title">Dashboard General</h2>'+
    '<div class="editbar" style="justify-content:space-between;align-items:center;flex-wrap:wrap"><div class="tabs" style="margin:0;padding:0"><button class="'+(view==='all'?'on':'')+'" onclick="setDashView(\'all\')">Ambos</button><button class="'+(view==='mina'?'on':'')+'" onclick="setDashView(\'mina\')">Mina</button><button class="'+(view==='planta'?'on':'')+'" onclick="setDashView(\'planta\')">Planta</button></div><button class="btn sm" style="width:auto" onclick="refreshData()">'+ic('refresh',15)+' Actualizar</button></div>'+
    '<div class="heroband"><div class="hb-t">Gasto Real acumulado · '+vlabel+' · '+ANIO+'</div><div class="hb-v">'+fmtM(tot.rAcum)+' <span style="font-size:14px;color:#9cc2ec;font-weight:600">de '+fmtM(tot.bAcum)+' budget</span></div><div class="hb-s">Desviación '+dev+' · Proyección de cierre '+fmtM(tot.proy)+' vs budget anual '+fmtM(tot.bAnual)+'</div></div>'+
@@ -578,28 +613,43 @@ function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{})
    '<div class="sectit"><span class="lft">Distribución de costo por área</span><span class="pill">Real YTD</span></div><div class="chartbox" style="height:300px">'+donut(dist.slice(0,9))+'</div>'+
    '<div class="sectit"><span class="lft">Proyección de cierre de año</span></div><div class="card"><div class="barrow"><div class="top"><b>Real proyectado</b><span class="n">'+fmtM(tot.proy)+' / '+fmtM(tot.bAnual)+'</span></div><div class="track"><div class="fill '+(tot.proy>tot.bAnual?'bad':'ok')+'" style="width:'+Math.min(100,tot.bAnual?tot.proy/tot.bAnual*100:0)+'%"></div></div></div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px"><div class="val" style="font-size:20px;font-weight:800">'+fmtM(tot.proy)+'</div><span class="tag '+(tot.devAnual>0?'bad':'ok')+'">'+(tot.devAnual>0?'+':'')+(tot.devAnual*100).toFixed(1)+'% vs budget</span></div></div>';}
 
-let AREA_SEL=null;
-function setAreaSel(v){AREA_SEL=v;render();}
-function viewAreaReport(){const f=curFaena();const fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';var ars=areasOf(f);
-  if(!ars.length)return '<div class="crumb">'+ic('informes',13)+' '+fn+'</div><h2 class="title">Informe por Área</h2><div class="empty">No hay áreas asignadas o cargadas para mostrar.</div>';
-  var sel=AREA_SEL;if(!sel||!ars.find(function(a){return a.id===sel;}))sel=ars[0].id;AREA_SEL=sel;
-  var a=ars.find(function(x){return x.id===sel;});var c=C(sel);var t=areaTotals(sel);
-  var ejecY=t.bAcum?Math.round(t.rAcum/t.bAcum*100):0;var devY=t.bAcum?(t.rAcum-t.bAcum)/t.bAcum:0;var devA=t.bAnual?(t.proy-t.bAnual)/t.bAnual:0;
-  var opts=ars.map(function(x){return '<option value="'+x.id+'" '+(x.id===sel?'selected':'')+'>'+x.name+' ('+(x.tipo==='mina'?'Mina':'Planta')+')</option>';}).join('');
-  var det='';for(var m=0;m<=MES_ACTUAL;m++){var bm=c.budget[m]||0;var rm=c.real[m];var dm=(rm!=null&&bm)?((rm-bm)/bm):null;det+='<tr><td>'+MESES[m]+' '+ANIO+'</td><td>'+fmtK(bm)+'</td><td>'+(rm==null?'—':fmtK(rm))+'</td><td class="'+(dm==null?'':(dm>0?'neg':'pos'))+'">'+(dm==null?'—':(dm>0?'+':'')+(dm*100).toFixed(0)+'%')+'</td></tr>';}
-  return '<div class="crumb">'+ic('informes',13)+' '+fn+'</div><h2 class="title">Informe por Área</h2>'+
-   '<div class="editbar"><label style="margin:0 8px 0 0">Área</label><select onchange="setAreaSel(this.value)" style="max-width:300px">'+opts+'</select><span class="pill" style="margin-left:auto">'+ars.length+' área(s) visible(s)</span></div>'+
-   '<div class="heroband"><div class="hb-t">'+(a.tipo==='mina'?'MINA':'PLANTA')+' · '+fn+'</div><div class="hb-v">'+a.name+'</div><div class="hb-s">Real YTD '+fmtM(t.rAcum)+' de '+fmtM(t.bAcum)+' budget · Ejecución '+ejecY+'% · Desviación '+(devY>0?'+':'')+(devY*100).toFixed(1)+'%</div></div>'+
-   '<div class="statwrap"><div class="ministat"><div class="l">Real acumulado</div><div class="v">'+fmtM(t.rAcum)+'</div></div><div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(t.bAnual)+'</div></div><div class="ministat"><div class="l">Proyección cierre</div><div class="v">'+fmtM(t.proy)+'</div></div><div class="ministat"><div class="l">Desv. proyectada</div><div class="v" style="color:'+(devA>0?'#c0392b':'#1e8e54')+'">'+(devA>0?'+':'')+(devA*100).toFixed(1)+'%</div></div></div>'+
-   '<div class="sectit"><span class="lft">Real vs Budget · mensual</span><span class="pill">'+a.name+'</span></div><div class="chartbox">'+barChart(MESES,c.budget,c.real)+'</div>'+
-   '<div class="sectit"><span class="lft">Costo acumulado</span><span class="pill">US$K</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(c.budget),cumReal(c.real),'Budget acum.','Real acum.')+'</div>'+
-   '<div class="sectit"><span class="lft">Detalle mensual</span></div><div class="card nopad" style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mes</th><th>Budget</th><th>Real</th><th>Desv</th></tr></thead><tbody>'+det+'</tbody></table></div>';}
-function viewCostos(tipo){const f=curFaena();const t=faenaTotals(f,tipo);const ar=areasOf(f,tipo);const s=monthly(f,tipo);
-  const bars=ar.map(a=>{const at=areaTotals(a.id);const dv=at.bAcum?(at.rAcum-at.bAcum)/at.bAcum:0;const pct=at.bAcum?Math.min(140,at.rAcum/at.bAcum*100):0;const cls=dv>0.03?'bad':dv<-0.03?'ok':'';
-    return '<div class="barrow"><div class="top"><b>'+a.name+'</b><span class="n">'+fmtK(at.rAcum)+' / '+fmtK(at.bAcum)+' <b style="color:'+(dv>0?'var(--bad)':'var(--ok)')+'">'+(dv>0?'+':'')+(dv*100).toFixed(0)+'%</b></span></div><div class="track"><div class="fill '+cls+'" style="width:'+Math.min(100,pct)+'%"></div></div></div>';}).join('');
+let AREA_PATH=[];
+function setAreaSel(v){AREA_PATH=v?[v]:[];render();}
+function areaGo(id){if(id==='__root')AREA_PATH=[];else if(id==='__up')AREA_PATH.pop();else AREA_PATH.push(id);render();}
+function areaGoTo(i){AREA_PATH=AREA_PATH.slice(0,i+1);render();}
+function costGo(tipo,id){AREA_PATH=id?[id]:[];CURRENT=(tipo==='mina'?'equipmina':'areasrep');buildNav();render();}
+function viewAreaReport(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||'';
+  var esM=tipo==='mina';var ML=esM?'Equipos Mina':'Áreas Planta';var UNI=esM?'equipo':'área';
+  var all=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&inScope(a);});
+  if(!all.length)return '<div class="crumb">'+ic(esM?'mina':'planta',13)+' '+fn+'</div><h2 class="title">'+ML+'</h2>'+scopeBanner()+'<div class="empty">No hay '+UNI+'s cargados aún. Súbelos en Configuración → Cargar Datos.</div>';
+  AREA_PATH=(AREA_PATH||[]).filter(function(id){var a=DB.areas.find(function(x){return x.id===id;});return a&&a.faena===f&&a.tipo===tipo&&inScope(a);});
+  var curId=AREA_PATH.length?AREA_PATH[AREA_PATH.length-1]:null;
+  var cur=curId?DB.areas.find(function(x){return x.id===curId;}):null;
+  var childs=curId?kids(curId).filter(inScope):rootsOf(f,tipo);
+  var t,mon,scopeName;
+  if(cur){t=nodeTot(curId);mon=nodeMon(curId);scopeName=cur.name;}
+  else{t={bAcum:0,rAcum:0,bAnual:0,proy:0};var bb=Array(12).fill(0),rr=Array(12).fill(0);rootsOf(f,tipo).forEach(function(rt){var x=nodeTot(rt.id);t.bAcum+=x.bAcum;t.rAcum+=x.rAcum;t.bAnual+=x.bAnual;t.proy+=x.proy;var mm=nodeMon(rt.id);for(var m=0;m<12;m++){bb[m]+=mm.b[m];if(mm.r[m]!=null)rr[m]+=mm.r[m];}});mon={b:bb,r:rr.map(function(v,m){return m<=MES_ACTUAL?v:null;})};scopeName='Todos los '+UNI+'s';}
+  var ejec=t.bAcum?Math.round(t.rAcum/t.bAcum*100):0;var devY=t.bAcum?(t.rAcum-t.bAcum)/t.bAcum:0;var devA=t.bAnual?(t.proy-t.bAnual)/t.bAnual:0;
+  var bc='<span class="dtrail-item'+(curId?'':' cur')+'" onclick="areaGo(\'__root\')">'+ic(esM?'mina':'planta',13)+' '+ML+'</span>';
+  AREA_PATH.forEach(function(id,i){var a=DB.areas.find(function(x){return x.id===id;});var last=i===AREA_PATH.length-1;bc+='<span class="dtrail-sep">›</span><span class="dtrail-item'+(last?' cur':'')+'" onclick="areaGoTo('+i+')">'+(a?a.name:'')+'</span>';});
+  var cards=childs.map(function(a){var x=nodeTot(a.id);var dv=x.bAcum?(x.rAcum-x.bAcum)/x.bAcum:0;var pct=x.bAcum?Math.min(100,x.rAcum/x.bAcum*100):0;var cls=dv>0.03?'bad':dv<-0.03?'ok':'';var hoja=isLeaf(a);var nk=leaves(a.id).length;
+    return '<div class="navcard" onclick="areaGo(\''+a.id+'\')"><div class="nc-h"><b>'+a.name+'</b>'+(hoja?'<span class="nc-leaf">'+ic('doc',13)+'</span>':'<span class="nc-arrow">'+ic('chev',16)+'</span>')+'</div><div class="nc-v">'+fmtM(x.rAcum)+' <span class="nc-b">/ '+fmtM(x.bAcum)+'</span></div><div class="track"><div class="fill '+cls+'" style="width:'+pct+'%"></div></div><div class="nc-f"><span class="'+(dv>0?'neg':'pos')+'">'+(dv>0?'+':'')+(dv*100).toFixed(0)+'%</span><span class="muted">'+(hoja?UNI:kids(a.id).length+' sub · '+nk+' '+UNI+'s')+'</span></div></div>';}).join('');
+  var html='<div class="crumb">'+ic(esM?'mina':'planta',13)+' '+fn+'</div><h2 class="title">'+ML+'</h2>'+scopeBanner()+
+   '<div class="dtrail">'+bc+(curId?'<button class="btn sm ghost" style="margin-left:auto;width:auto" onclick="areaGo(\'__up\')">'+ic('chev',14)+' Subir un nivel</button>':'')+'</div>'+
+   '<div class="heroband"><div class="hb-t">'+(esM?'MINA':'PLANTA')+' · '+fn+'</div><div class="hb-v">'+scopeName+'</div><div class="hb-s">Real YTD '+fmtM(t.rAcum)+' de '+fmtM(t.bAcum)+' budget · Ejecución '+ejec+'% · Desviación '+(devY>0?'+':'')+(devY*100).toFixed(1)+'%</div></div>'+
+   '<div class="statwrap"><div class="ministat"><div class="l">Real acumulado</div><div class="v">'+fmtM(t.rAcum)+'</div></div><div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(t.bAnual)+'</div></div><div class="ministat"><div class="l">Proyección cierre</div><div class="v">'+fmtM(t.proy)+'</div></div><div class="ministat"><div class="l">Desv. proyectada</div><div class="v" style="color:'+(devA>0?'#c0392b':'#1e8e54')+'">'+(devA>0?'+':'')+(devA*100).toFixed(1)+'%</div></div></div>';
+  if(childs.length){html+='<div class="sectit"><span class="lft">'+(curId?'Desglose de '+cur.name:'Grandes grupos')+'</span><span class="pill">'+childs.length+' '+(curId?'sub-'+UNI+'s':'grupos')+' · toca para entrar</span></div><div class="navgrid">'+cards+'</div>';}
+  html+='<div class="sectit"><span class="lft">Real vs Budget · mensual</span><span class="pill">'+scopeName+'</span></div><div class="chartbox">'+barChart(MESES,mon.b,mon.r)+'</div>'+
+   '<div class="sectit"><span class="lft">Costo acumulado</span><span class="pill">US$K</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(mon.b),cumReal(mon.r),'Budget acum.','Real acum.')+'</div>';
+  var det='';for(var m=0;m<=MES_ACTUAL;m++){var bm=mon.b[m]||0;var rm=mon.r[m];var dm=(rm!=null&&bm)?((rm-bm)/bm):null;det+='<tr><td>'+MESES[m]+' '+ANIO+'</td><td>'+fmtK(bm)+'</td><td>'+(rm==null?'—':fmtK(rm))+'</td><td class="'+(dm==null?'':(dm>0?'neg':'pos'))+'">'+(dm==null?'—':(dm>0?'+':'')+(dm*100).toFixed(0)+'%')+'</td></tr>';}
+  html+='<div class="sectit"><span class="lft">Detalle mensual</span><span class="pill">'+scopeName+'</span></div><div class="card nopad" style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mes</th><th>Budget</th><th>Real</th><th>Desv</th></tr></thead><tbody>'+det+'</tbody></table></div>';
+  return html;}
+function viewCostos(tipo){const f=curFaena();const t=faenaTotals(f,tipo);const ar=rootsOf(f,tipo);const s=monthly(f,tipo);const nLeaf=leafAreasOf(f,tipo).length;
+  const bars=ar.map(a=>{const at=nodeTot(a.id);const dv=at.bAcum?(at.rAcum-at.bAcum)/at.bAcum:0;const pct=at.bAcum?Math.min(140,at.rAcum/at.bAcum*100):0;const cls=dv>0.03?'bad':dv<-0.03?'ok':'';const hoja=isLeaf(a);const sub=hoja?'':' <span class="muted" style="font-weight:600;font-size:11px">· '+leaves(a.id).length+' '+(tipo==='mina'?'equipos':'áreas')+'</span>';
+    return '<div class="barrow" style="cursor:pointer" onclick="costGo(\''+tipo+'\',\''+a.id+'\')"><div class="top"><b>'+a.name+sub+(hoja?'':' '+ic('chev',12))+'</b><span class="n">'+fmtK(at.rAcum)+' / '+fmtK(at.bAcum)+' <b style="color:'+(dv>0?'var(--bad)':'var(--ok)')+'">'+(dv>0?'+':'')+(dv*100).toFixed(0)+'%</b></span></div><div class="track"><div class="fill '+cls+'" style="width:'+Math.min(100,pct)+'%"></div></div></div>';}).join('');
   return '<div class="crumb">'+ic(tipo,13)+' '+((DB.faenas.find(x=>x.id===f)||{}).name||'')+'</div><h2 class="title">'+(tipo==='mina'?'Costos Mina':'Costos Planta')+'</h2>'+
    '<div class="grid g2" style="margin-top:12px"><div class="card kpi"><div class="lbl">Real acumulado</div><div class="val">'+fmtM(t.rAcum)+'</div><span class="delta '+(t.dev>0?'up':'down')+'">'+(t.dev>0?'+':'')+(t.dev*100).toFixed(1)+'%</span></div>'+
-   '<div class="card kpi"><div class="lbl">Budget acumulado</div><div class="val">'+fmtM(t.bAcum)+'</div><span class="delta flat">'+ar.length+' áreas</span></div>'+
+   '<div class="card kpi"><div class="lbl">Budget acumulado</div><div class="val">'+fmtM(t.bAcum)+'</div><span class="delta flat">'+nLeaf+' '+(tipo==='mina'?'equipos':'áreas')+'</span></div>'+
    '<div class="card kpi"><div class="lbl">Proyección año</div><div class="val">'+fmtM(t.proy)+'</div><span class="delta '+(t.devAnual>0?'up':'down')+'">'+(t.devAnual>0?'+':'')+(t.devAnual*100).toFixed(1)+'%</span></div></div>'+
    '<div class="sectit"><span class="lft">Evolución mensual</span><span class="pill">Real vs Budget</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r)+'</div>'+
    '<div class="sectit"><span class="lft">Costo acumulado</span><span class="pill">US$K acumulado</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(s.b),cumReal(s.r),'Budget acum.','Real acum.')+'</div>'+
@@ -612,12 +662,12 @@ function viewCostos(tipo){const f=curFaena();const t=faenaTotals(f,tipo);const a
       '<div class="flexbtns" style="margin-top:10px"><button class="btn ghost" style="width:auto" onclick="downloadHistorial()">'+ic('download',15)+' Plantilla</button><button class="btn danger" style="width:auto" onclick="resetCostos(\''+tipo+'\')">'+ic('trash',15)+' Poner en cero</button></div></div>'+
      '<div class="sectit"><span class="lft">'+ic('edit',16)+' Editar manual · '+(tipo==='mina'?'Mina':'Planta')+'</span><span class="pill">en vivo · kUSD</span></div>'+editGrid(tipo)
    ):'')+
-   '<div class="sectit"><span class="lft">Desglose por área · '+(tipo==='mina'?'Mina':'Planta')+'</span></div><div class="card">'+(bars||'<div class="empty">Sin áreas</div>')+'</div>';}
-async function resetCostos(tipo){var f=curFaena();var ars=areasOf(f,tipo);if(!ars.length)return toast('Sin áreas en '+(tipo==='mina'?'Mina':'Planta'));
+   '<div class="sectit"><span class="lft">Desglose por grupo · '+(tipo==='mina'?'Mina':'Planta')+'</span><span class="pill">toca para ver el detalle</span></div><div class="card">'+(bars||'<div class="empty">Sin '+(tipo==='mina'?'equipos':'áreas')+'</div>')+'</div>';}
+async function resetCostos(tipo){var f=curFaena();var ars=leafAreasOf(f,tipo);if(!ars.length)return toast('Sin áreas en '+(tipo==='mina'?'Mina':'Planta'));
   if(!confirm('¿Poner en CERO todos los datos de '+(tipo==='mina'?'MINA':'PLANTA')+' de esta faena?\n\nSe borran Budget y Real cargados para volver a cargar el presupuesto desde cero. No se puede deshacer.'))return;
   try{for(var i=0;i<ars.length;i++){var a=ars[i];await rest('mantos_costs?area_id=eq.'+a.id,'DELETE');DB.costs[a.id]={budget:Array(12).fill(0),real:Array(12).fill(null)};}buildNav();render();toast((tipo==='mina'?'Mina':'Planta')+' en cero — ya puedes cargar el presupuesto');}catch(e){toast('Error: '+e.message);}}
 
-function editGrid(tipo){const f=curFaena();const ar=areasOf(f,tipo);
+function editGrid(tipo){const f=curFaena();const ar=leafAreasOf(f,tipo);
   if(!ar.length)return '<div class="card"><div class="empty">Sin áreas.</div><div class="addrow"><input id="qa_name" placeholder="Nueva área"><button class="btn sm" onclick="quickAddArea(\''+f+'\',\''+(tipo==='all'?'mina':tipo)+'\')">'+ic('plus',15)+' Área</button></div></div>';
   let sel=EDIT_AREA[tipo];if(!sel||!ar.find(a=>a.id===sel))sel=ar[0].id;EDIT_AREA[tipo]=sel;const c=C(sel);
   const opts=ar.map(a=>'<option value="'+a.id+'" '+(a.id===sel?'selected':'')+'>'+a.name+'</option>').join('');
@@ -634,14 +684,14 @@ function viewBudget(){const f=curFaena();const mi=faenaTotals(f,'mina'),pl=faena
    '<div class="statwrap"><div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(tot.bAnual)+'</div></div><div class="ministat"><div class="l">Ejecutado</div><div class="v">'+fmtM(tot.rAcum)+'</div></div><div class="ministat"><div class="l">% ejecución</div><div class="v">'+(tot.bAnual?((tot.rAcum/tot.bAnual)*100).toFixed(0):0)+'%</div></div><div class="ministat"><div class="l">Saldo</div><div class="v">'+fmtM(tot.bAnual-tot.rAcum)+'</div></div></div>'+
    '<div class="sectit"><span class="lft">Budget mensual vs Real</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r)+'</div>'+
    '<div class="sectit"><span class="lft">Resumen presupuestario</span></div><div class="card"><table class="tbl"><tr><th>Segmento</th><th>Budget</th><th>Proy.</th><th>Desv.</th></tr>'+rows+'</table></div>'+
-   '<div class="sectit"><span class="lft">Budget anual por área</span></div><div class="grid g2">'+['mina','planta'].map(function(tp){var arA=areasOf(f,tp);var rr=arA.map(function(a){var tt=areaTotals(a.id);return '<div class="barrow"><div class="top"><b>'+a.name+'</b><span class="n">'+fmtK(tt.bAnual)+'</span></div></div>';}).join('');return '<div class="card"><div class="rolehead" style="margin-bottom:8px"><b>'+ic(tp,15)+' '+(tp==='mina'?'Mina':'Planta')+'</b><span class="cnt">'+fmtM(faenaTotals(f,tp).bAnual)+'</span></div>'+(rr||'<div class="empty">Sin áreas</div>')+'</div>';}).join('')+'</div>'+
+   '<div class="sectit"><span class="lft">Budget anual por grupo</span></div><div class="grid g2">'+['mina','planta'].map(function(tp){var arA=rootsOf(f,tp);var rr=arA.map(function(a){var tt=nodeTot(a.id);return '<div class="barrow"><div class="top"><b>'+a.name+'</b><span class="n">'+fmtK(tt.bAnual)+'</span></div></div>';}).join('');return '<div class="card"><div class="rolehead" style="margin-bottom:8px"><b>'+ic(tp,15)+' '+(tp==='mina'?'Mina':'Planta')+'</b><span class="cnt">'+fmtM(faenaTotals(f,tp).bAnual)+'</span></div>'+(rr||'<div class="empty">Sin áreas</div>')+'</div>';}).join('')+'</div>'+
    (isAdmin()?('<div class="banner" style="margin-top:12px">'+ic('upload',18)+'<div>El presupuesto se carga por separado en <b style="color:var(--copper2)">Costos Mina</b> y <b style="color:var(--copper2)">Costos Planta</b> (planilla o manual). Aquí lo puedes ajustar por área:</div></div><div class="sectit"><span class="lft">'+ic('edit',16)+' Editar presupuesto por área</span></div>'+editGrid('all')):'');}
 
 function viewProyeccion(){const f=curFaena();const fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';const tot=faenaTotals(f);const dev=tot.devAnual;const s=monthly(f,null);
   const lab=MESES.slice();const bud=cumBudget(s.b);const fac=(function(){let b=0,r=0;for(let m=0;m<=MES_ACTUAL;m++){b+=s.b[m];r+=s.r[m]||0;}return b?r/b:1;})();
   const real=[];let rAcc=0,p=0;for(let m=0;m<12;m++){if(m<=MES_ACTUAL){rAcc+=s.r[m]||0;p=rAcc;real.push(rAcc);}else{p+=Math.round(s.b[m]*((fac+1)/2));real.push(p);}}
   const avance=Math.round((MES_ACTUAL+1)/12*100);
-  let ars=areasOf(f).map(function(a){const t=areaTotals(a.id);const d=t.bAnual?(t.proy-t.bAnual)/t.bAnual:0;return {n:a.name,tipo:a.tipo,proy:t.proy,ba:t.bAnual,d:d};}).filter(function(x){return x.ba>0||x.proy>0;});
+  let ars=rootsOf(f,'all').map(function(a){const t=nodeTot(a.id);const d=t.bAnual?(t.proy-t.bAnual)/t.bAnual:0;return {n:a.name,tipo:a.tipo,proy:t.proy,ba:t.bAnual,d:d};}).filter(function(x){return x.ba>0||x.proy>0;});
   ars.sort(function(x,y){return y.proy-x.proy;});
   const rows=ars.map(function(a){const over=a.d>0.03,under=a.d<-0.03;const fg=over?'#c0392b':under?'#1e8e54':'#b8860b';const pct=a.ba?Math.min(100,a.proy/a.ba*100):0;
     return '<div class="barrow"><div class="top"><b>'+a.n+'</b><span class="n">'+fmtK(a.proy)+' / '+fmtK(a.ba)+' <b style="color:'+fg+'">'+(a.d>0?'+':'')+(a.d*100).toFixed(0)+'%</b></span></div><div class="track"><div class="fill '+(over?'bad':under?'ok':'')+'" style="width:'+pct+'%"></div></div></div>';}).join('');
@@ -698,7 +748,7 @@ function viewConfig(){if(!can('config'))return '<div class="empty">Sin acceso.</
   return '<div class="crumb">'+ic('config',13)+' Administración</div><h2 class="title">Configuración</h2><div class="tabs">'+tabs.map(t=>'<button class="'+(CFG_TAB===t[0]?'on':'')+'" onclick="cfgTab(\''+t[0]+'\')">'+t[1]+'</button>').join('')+'</div>'+body;}
 function cfgTab(t){CFG_TAB=t;render();}
 function cfgDatos(){const url=location.origin+location.pathname;const fn=(DB.faenas.find(x=>x.id===curFaena())||{}).name||'';const f=curFaena();
-  var arsOpts=areasOf(f).map(function(a){return '<option value="'+a.id+'">'+a.name+' ('+(a.tipo==='mina'?'Mina':'Planta')+')</option>';}).join('');
+  var arsOpts=leafAreasOf(f).map(function(a){var anc=ancestors(a).map(function(x){return x.name;}).reverse();return '<option value="'+a.id+'">'+(anc.length?anc.join(' › ')+' › ':'')+a.name+' ('+(a.tipo==='mina'?'Mina':'Planta')+')</option>';}).join('');
   return '<div class="banner">'+ic('doc',18)+'<div><b>¿Qué vas a cargar?</b> Tienes dos formas — elige la que te sirva. En ambas puedes usar tu propio formato de Excel.</div></div>'+
    /* 1 · GENERAL */
    '<div class="card"><div class="sectit" style="margin-top:0"><span class="lft">1 · Toda la Mina o toda la Planta</span><span class="pill">carga general</span></div>'+
@@ -826,7 +876,7 @@ function waAccess(name,un,p){window.open('https://wa.me/?text='+encodeURICompone
 /* ===== Excel: importar / plantilla / modelo libre / subir a área (escriben en la nube) ===== */
 function tplCfg(){return (DB.settings&&DB.settings.tplConfig)||{scope:'all',name:'',cols:['Area','Mes','Budget','Real']};}
 function genTemplate(cfg){const f=curFaena();const cols=(cfg.cols&&cfg.cols.length)?cfg.cols.slice():['Area','Mes','Budget','Real'];
-  let ars=areasOf(f);if(cfg.scope==='mina')ars=ars.filter(a=>a.tipo==='mina');if(cfg.scope==='planta')ars=ars.filter(a=>a.tipo==='planta');
+  let ars=leafAreasOf(f);if(cfg.scope==='mina')ars=ars.filter(a=>a.tipo==='mina');if(cfg.scope==='planta')ars=ars.filter(a=>a.tipo==='planta');
   const isA=c=>/^(area|área)$/i.test(c),isM=c=>/^mes$/i.test(c),isB=c=>/^budget$/i.test(c),isR=c=>/^real$/i.test(c);
   const hasA=cols.some(isA),hasM=cols.some(isM);
   function cell(col,a,m){if(isA(col))return a?a.name:'';if(isM(col))return m!=null?MESES[m]:'';if(isB(col))return (a&&DB.costs[a.id])?DB.costs[a.id].budget[m]:'';if(isR(col))return (a&&DB.costs[a.id]&&DB.costs[a.id].real[m]!=null)?DB.costs[a.id].real[m]:'';return '';}
@@ -837,7 +887,7 @@ function genTemplate(cfg){const f=curFaena();const cols=(cfg.cols&&cfg.cols.leng
   const ws=XLSX.utils.aoa_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,(cfg.sheet||'Planilla'));XLSX.writeFile(wb,'Modelo_'+(cfg.name?cfg.name.replace(/[^a-z0-9]+/gi,'_'):f)+'.xlsx');}
 function downloadTemplate(){genTemplate(tplCfg());toast('Plantilla descargada');}
 const CUENTAS_SAP=[['4080537900','Ítems Reparados'],['4080536300','Repuestos Mecánicos'],['4070174100','Contratistas de Mantención'],['4080536000','Repuestos Eléctricos'],['4060233800','Lubricantes y Grasas'],['4040180100','Energía Eléctrica'],['4070470600','Transporte Personal'],['4070473000','Aseo y Serv. al Personal'],['4070574200','Contratistas Operación'],['4080639900','Varios Suministros'],['4060133600','Aceros'],['4070371300','Arriendo Maquinaria'],['4070575000','Software / Hardware']];
-function downloadHistorial(){const f=curFaena();const fn=(DB.faenas.find(x=>x.id===f)||{}).name||f;const ars=areasOf(f);
+function downloadHistorial(){const f=curFaena();const fn=(DB.faenas.find(x=>x.id===f)||{}).name||f;const ars=leafAreasOf(f);
   const head=['MES','Centro de Coste','Área','Cuenta de Mayor','REAL 2026','BUDGET 2026'];const data=[head];
   ars.forEach(function(a){const c=DB.costs[a.id]||{budget:[],real:[]};for(let m=0;m<=MES_ACTUAL;m++){data.push([MESES[m],a.name,(a.tipo==='mina'?'Mina':'Planta'),'',(c.real&&c.real[m]!=null?c.real[m]:''),(c.budget?(c.budget[m]||''):'')]);}});
   if(!ars.length){for(let m=0;m<=MES_ACTUAL;m++)data.push([MESES[m],'','','','','']);}
@@ -846,7 +896,7 @@ function downloadHistorial(){const f=curFaena();const fn=(DB.faenas.find(x=>x.id
   const wsI=XLSX.utils.aoa_to_sheet([['MANTOS CONTROL 360 — Plantilla Historial de Gastos · '+fn],[''],['1) Completa REAL 2026 y BUDGET 2026 por Mes y Centro de Coste (en kUSD o USD; la plataforma detecta la unidad).'],['2) La columna Cuenta de Mayor es opcional — usa los códigos de la hoja "Cuentas".'],['3) Sube el archivo en Configuración → Datos / Excel, eligiendo Mina o Planta.'],['4) La plataforma suma por Área y Mes automáticamente y actualiza los dashboards.']]);wsI['!cols']=[{wch:104}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,wsH,'Historial 2026');XLSX.utils.book_append_sheet(wb,wsC,'Cuentas');XLSX.utils.book_append_sheet(wb,wsI,'Instrucciones');
   XLSX.writeFile(wb,'Historial_Gastos_'+f+'_2026.xlsx');toast('Plantilla Historial descargada');}
-function downloadOL(){const f=curFaena();const ars=areasOf(f);const per=Math.min(12,MES_ACTUAL+1);const cat='OL'+(''+ANIO).slice(2)+(per<10?'0'+per:per);
+function downloadOL(){const f=curFaena();const ars=leafAreasOf(f);const per=Math.min(12,MES_ACTUAL+1);const cat='OL'+(''+ANIO).slice(2)+(per<10?'0'+per:per);
   const head=['CATEGORY','RYEAR','POPER','RBUKRS','RCNTR','NOMBRE CECO','ÁREA','RACCT','CLACO','KSL','RKCUR'];const data=[head];
   ars.forEach(function(a){CUENTAS_SAP.slice(0,3).forEach(function(ct){data.push([cat,ANIO,per,'3020','',a.name,(a.tipo==='mina'?'Mina':'Planta'),ct[0],ct[1],'','USD']);});});
   if(!ars.length)data.push([cat,ANIO,per,'3020','','','','','','','USD']);
@@ -917,22 +967,33 @@ function onImportDrop(e){const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTra
 function readImportFile(file){const r=new FileReader();r.onload=function(e){try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});IMPORT={name:file.name,parsed:parseWorkbook(rows)};renderImportPreview();}catch(err){toast('Error al leer: '+err.message);}};r.readAsArrayBuffer(file);}
 function renderImportPreview(){const el=$('#importPreview');if(!el)return;if(!IMPORT){el.innerHTML='';return;}const p=IMPORT.parsed;
   if(!p.ok){el.innerHTML='<div class="banner" style="border-color:rgba(231,76,60,.35);background:rgba(231,76,60,.06);margin-top:12px">'+ic('doc',18)+'<div>'+p.reason+'</div></div>';return;}
+  var tl=($('#xls_tipo')&&$('#xls_tipo').value==='planta')?'Planta':'Mina';
   const mc=(k,v,miss)=>'<div class="mapcell'+(miss?' miss':'')+'"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';
   const samp=p.sample.map(s=>'<div class="barrow"><div class="top"><b>'+s.n+'</b><span class="n">'+fmtK(s.ytd)+'</span></div></div>').join('');
   el.innerHTML='<div class="card" style="margin-top:14px"><span class="pill-ok">'+ic('check',14)+' '+IMPORT.name+' · '+p.nrows+' filas leídas</span>'+
     '<div class="mapgrid">'+mc('Mes',p.cols.mes,false)+mc('Área / CECO',p.cols.area,false)+mc('Real',p.cols.real,p.realC<0)+mc('Budget / OL',p.cols.bud,p.budC<0)+'</div>'+
     '<div class="statwrap" style="margin:4px 0 6px"><div class="ministat"><div class="l">Áreas detectadas</div><div class="v">'+p.nAreas+'</div></div><div class="ministat"><div class="l">Celdas de costo</div><div class="v">'+p.nCells+'</div></div><div class="ministat"><div class="l">Unidad</div><div class="v" style="font-size:15px">'+p.unidad+'</div></div></div>'+
     '<div class="sectit"><span class="lft">Vista previa · top áreas (YTD Real)</span></div><div class="card" style="background:#fff">'+(samp||'<div class="empty">Sin datos numéricos</div>')+'</div>'+
-    '<div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="confirmImport()">'+ic('check',16)+' Confirmar y cargar a la nube</button><button class="btn ghost" style="width:auto" onclick="IMPORT=null;renderImportPreview()">Cancelar</button></div></div>';
+    '<div class="banner" style="border-color:rgba(232,181,60,.45);background:rgba(232,181,60,.09);margin-top:10px">'+ic('refresh',18)+'<div>Al confirmar se <b>reemplaza todo lo de '+tl+'</b> con esta planilla — se borran las cifras anteriores para que el Dashboard quede <b>solo con estos datos</b>.</div></div>'+
+    '<div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="confirmImport()">'+ic('check',16)+' Confirmar y reemplazar '+tl+'</button><button class="btn ghost" style="width:auto" onclick="IMPORT=null;renderImportPreview()">Cancelar</button></div></div>';
 }
-async function confirmImport(){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPORT.parsed;const f=curFaena();const tipo=($('#xls_tipo')&&$('#xls_tipo').value)||'mina';
-  const ups=[];let created=0,groups=0;
+async function confirmImport(){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPORT.parsed;const f=curFaena();const tipo=($('#xls_tipo')&&$('#xls_tipo').value)||'mina';const tl=(tipo==='mina'?'Mina':'Planta');
+  toast('Reemplazando datos de '+tl+'…');
+  /* 1) borrar TODO lo anterior de este mundo (para que quede solo lo nuevo, sin sumar cifras viejas) */
+  var prev=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo;});
+  try{for(var i=0;i<prev.length;i++){await rest('mantos_costs?area_id=eq.'+prev[i].id,'DELETE');DB.costs[prev[i].id]={budget:Array(12).fill(0),real:Array(12).fill(null)};}}catch(e){}
+  /* 2) cargar la planilla nueva */
+  const ups=[];let created=0,groups=0;var usedIds={};
   for(const g of Object.keys(p.agg)){groups++;let area=DB.areas.find(a=>a.faena===f&&a.tipo===tipo&&a.name.toLowerCase()===g.toLowerCase());
     if(!area){const id=uid('a');area={id:id,faena:f,tipo:tipo,name:g};DB.areas.push(area);DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};try{await rest('mantos_areas','POST',{id:id,faena:f,tipo:tipo,name:g});}catch(e){}created++;}
-    const c=DB.costs[area.id];const A=p.agg[g];
+    usedIds[area.id]=1;const c=DB.costs[area.id];const A=p.agg[g];
     for(let m=0;m<12;m++){let ch=false;if(A.hb[m]){c.budget[m]=A.b[m]*p.factor;ch=true;}if(A.hr[m]){c.real[m]=A.r[m]*p.factor;ch=true;}if(ch)ups.push({area_id:area.id,month:m,budget:c.budget[m]||0,real:c.real[m]});}}
-  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;buildNav();render();toast('Cargado: '+groups+' áreas ('+created+' nuevas) · '+ups.length+' celdas');}catch(e){toast('Error: '+e.message);}}
-function cfgSubir(){const f=curFaena();const ars=areasOf(f);const opts=ars.map(a=>'<option value="'+a.id+'">'+a.name+' ('+(a.tipo==='mina'?'Mina':'Planta')+')</option>').join('');
+  /* 3) eliminar áreas viejas de este mundo que NO venían en la planilla nueva */
+  var stale=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&!usedIds[a.id];});
+  try{for(var j=0;j<stale.length;j++){await rest('mantos_areas?id=eq.'+stale[j].id,'DELETE');delete DB.costs[stale[j].id];}}catch(e){}
+  DB.areas=DB.areas.filter(function(a){return !(a.faena===f&&a.tipo===tipo&&!usedIds[a.id]);});
+  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;buildNav();render();toast(tl+' reemplazado: '+groups+' áreas · '+ups.length+' celdas (datos nuevos)');}catch(e){toast('Error: '+e.message);}}
+function cfgSubir(){const f=curFaena();const ars=leafAreasOf(f);const opts=ars.map(a=>{var anc=ancestors(a).map(function(x){return x.name;}).reverse();return '<option value="'+a.id+'">'+(anc.length?anc.join(' › ')+' › ':'')+a.name+' ('+(a.tipo==='mina'?'Mina':'Planta')+')</option>';}).join('');
   return '<p class="muted" style="line-height:1.6">Elige el área (existente o nueva), sube tu informe Excel y la plataforma lo convierte en dashboard asociado a esa área, en la nube.</p>'+
    '<div class="card"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('upload',16)+' Subir informe a un área</span></div>'+
    '<div class="field"><label>Área destino</label><select id="su_area" onchange="suToggle()">'+opts+'<option value="__new">+ Crear nueva área…</option></select></div>'+
@@ -971,7 +1032,7 @@ setIcon();
 
 /* ===== Init ===== */
 $('#logoLogin').innerHTML=LOGO;$('#logoSide').innerHTML='<div style="width:100%">'+LOGO+'</div>';
-$('#logoutBtn').innerHTML=ic('power',17);$('#hambBtn').innerHTML=ic('menu',18);$('#refBtn').innerHTML=ic('refresh',17);$('#faenaLabel').innerHTML=ic('mountain',13)+' Faena';
+$('#logoutBtn').innerHTML=ic('power',17);$('#hambBtn').innerHTML=ic('menu',18);$('#refBtn').innerHTML=ic('refresh',17);var _cb=$('#cacheBtn');if(_cb)_cb.innerHTML=ic('trash',17);$('#faenaLabel').innerHTML=ic('mountain',13)+' Faena';
 ['lg_user','lg_pass'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}));
 </script>
 </body>
