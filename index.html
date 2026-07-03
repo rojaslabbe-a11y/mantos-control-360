@@ -997,10 +997,13 @@ function genTemplate(cfg){const f=curFaena();const cols=(cfg.cols&&cfg.cols.leng
   if(hasA&&hasM){ars.forEach(a=>{for(let m=0;m<=MES_ACTUAL;m++)data.push(cols.map(c=>cell(c,a,m)));});}
   else if(hasA){ars.forEach(a=>data.push(cols.map(c=>cell(c,a,null))));}
   else{const n=Math.max(12,cfg.rows||15);for(let i=0;i<n;i++)data.push(cols.map(()=>''));}
-  const ws=XLSX.utils.aoa_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,(cfg.sheet||'Planilla'));XLSX.writeFile(wb,'Modelo_'+(cfg.name?cfg.name.replace(/[^a-z0-9]+/gi,'_'):f)+'.xlsx');}
+  const ws=XLSX.utils.aoa_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,(cfg.sheet||'Planilla'));
+  var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});offerDownload(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Modelo_'+(cfg.name?cfg.name.replace(/[^a-z0-9]+/gi,'_'):f)+'.xlsx','plantilla Excel');}
 function downloadTemplate(){genTemplate(tplCfg());toast('Plantilla descargada');}
 const CUENTAS_SAP=[['4080537900','Ítems Reparados'],['4080536300','Repuestos Mecánicos'],['4070174100','Contratistas de Mantención'],['4080536000','Repuestos Eléctricos'],['4060233800','Lubricantes y Grasas'],['4040180100','Energía Eléctrica'],['4070470600','Transporte Personal'],['4070473000','Aseo y Serv. al Personal'],['4070574200','Contratistas Operación'],['4080639900','Varios Suministros'],['4060133600','Aceros'],['4070371300','Arriendo Maquinaria'],['4070575000','Software / Hardware']];
-function downloadHistorial(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||f;var tl=(tipo==='mina'?'Mina':tipo==='planta'?'Planta':'Costos');
+function downloadHistorial(tipo){var tl=(tipo==='mina'?'Mina':'Planta');var url='./Plantilla_'+tl+'_'+ANIO+'.xlsx';toast('Preparando plantilla '+tl+'…');
+  fetch(url,{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.blob();}).then(function(b){if(!b||b.size<500)throw 0;offerDownload(b,'Plantilla_'+tl+'_'+ANIO+'.xlsx','plantilla '+tl+' (con listas)');}).catch(function(){genHistorialXlsx(tipo);});}
+function genHistorialXlsx(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||f;var tl=(tipo==='mina'?'Mina':tipo==='planta'?'Planta':'Costos');
   var ars=leafAreasOf(f,tipo||'all');
   var head=['Mes','Centro de costo','Ceco','Sub areas','Cuenta mayor','Area','Claco','Orden','Asignacion (orden)','Real','Budget'];var data=[head];
   ars.forEach(function(a){var anc=ancestors(a);var area=anc.length?anc[anc.length-1].name:a.name;var subarea=(anc.length>=2?anc[0].name:'');
@@ -1017,7 +1020,7 @@ function downloadOL(){const f=curFaena();const ars=leafAreasOf(f);const per=Math
   const ws=XLSX.utils.aoa_to_sheet(data);ws['!cols']=[{wch:9},{wch:7},{wch:7},{wch:8},{wch:14},{wch:24},{wch:9},{wch:12},{wch:26},{wch:12},{wch:7}];
   const wsI=XLSX.utils.aoa_to_sheet([['CARGA OUTLOOK OL 6+6 — formato SAP'],[''],['CATEGORY: versión del Outlook (ej. '+cat+').   RYEAR: año.   POPER: período/mes (número).'],['RBUKRS: 3020 (Mantos Blancos).   RCNTR: código CECO (MBxxxxxxxx).   RACCT: cuenta de mayor.'],['KSL: monto en USD.   RKCUR: USD.   Completa RCNTR y KSL por línea y carga el archivo en SAP.']]);wsI['!cols']=[{wch:104}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'CARGA OL6+6');XLSX.utils.book_append_sheet(wb,wsI,'Instrucciones');
-  XLSX.writeFile(wb,'Plantilla_OL6mas6_SAP_'+ANIO+'.xlsx');toast('Plantilla OL 6+6 descargada');}
+  var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});offerDownload(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Plantilla_OL6mas6_SAP_'+ANIO+'.xlsx','plantilla OL 6+6');}
 let TPL={scope:'all',name:'',cols:['Area','Mes','Budget','Real']};
 const SMART=['Area','Mes','Budget','Real'];
 function lc(a){return a.map(c=>c.toLowerCase());}
