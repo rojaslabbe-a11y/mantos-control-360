@@ -284,6 +284,17 @@ h2.title{font-size:22px;margin:5px 0 4px}
 .on-val.z{font-size:11.5px;font-weight:700;color:#9db0c6;font-style:italic}
 .on-sub{font-size:10.5px;color:#8798ac;font-weight:600;margin-top:6px;text-align:left;letter-spacing:.2px}
 .onode.root .on-sub{margin-top:6px}
+.orgedit-bar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:2px 0 4px}
+.onode.editing{border-style:dashed;border-color:var(--copper2)}
+.on-edit{display:flex;gap:6px;margin-top:9px;padding-top:9px;border-top:1px dashed rgba(18,44,82,.16)}
+.onode.root .on-edit{border-top-color:rgba(255,255,255,.22)}
+.on-mini{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:8px;border:1px solid rgba(18,44,82,.16);background:#fff;color:#3c5476;cursor:pointer;font-size:11px;font-weight:800;padding:6px 8px;transition:.14s}
+.on-mini:hover{background:var(--copper);color:#fff;border-color:transparent}
+.on-mini.del{flex:none;color:#c0392b}
+.on-mini.del:hover{background:#c0392b;color:#fff;border-color:transparent}
+.onode.root .on-mini{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);color:#fff}
+.onode.root .on-mini:hover{background:var(--copper);border-color:transparent}
+.onode.root .on-mini.del{color:#ff9d86}
 </style>
 </head>
 <body>
@@ -674,7 +685,7 @@ function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{})
    '<div class="sectit"><span class="lft">Distribución de costo por área</span><span class="pill">Real YTD</span></div><div class="chartbox" style="height:300px">'+donut(dist.slice(0,9))+'</div>'+
    '<div class="sectit"><span class="lft">Proyección de cierre de año</span></div><div class="card"><div class="barrow"><div class="top"><b>Real proyectado</b><span class="n">'+fmtM(tot.proy)+' / '+fmtM(tot.bAnual)+'</span></div><div class="track"><div class="fill '+(tot.proy>tot.bAnual?'bad':'ok')+'" style="width:'+Math.min(100,tot.bAnual?tot.proy/tot.bAnual*100:0)+'%"></div></div></div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px"><div class="val" style="font-size:20px;font-weight:800">'+fmtM(tot.proy)+'</div><span class="tag '+(tot.devAnual>0?'bad':'ok')+'">'+(tot.devAnual>0?'+':'')+(tot.devAnual*100).toFixed(1)+'% vs budget</span></div></div>';}
 
-let ORG_EXP={};let AREA_VIEW=null;
+let ORG_EXP={};let AREA_VIEW=null;let ORG_EDIT=false;
 function orgToggle(id){ORG_EXP[id]=!ORG_EXP[id];render();}
 function orgView(id){AREA_VIEW=(AREA_VIEW===id?null:id);render();}
 function setAreaSel(v){AREA_VIEW=v||null;render();}
@@ -683,21 +694,24 @@ function viewAreaReport(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x
   var esM=tipo==='mina';var ML=esM?'Equipos Mina':'Áreas Planta';var UNI=esM?'equipo':'área';var UNIS=esM?'equipos':'áreas';
   var all=DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&inScope(a);});
   if(!all.length)return '<div class="crumb">'+ic(esM?'mina':'planta',13)+' '+fn+'</div><h2 class="title">'+ML+'</h2>'+scopeBanner()+'<div class="empty">No hay '+UNIS+' cargados aún. Súbelos en Configuración → Cargar Datos.</div>';
-  var roots=rootsOf(f,tipo);
+  var roots=rootsOf(f,tipo);var adm=isAdmin();
   if(AREA_VIEW){var av=DB.areas.find(function(x){return x.id===AREA_VIEW;});if(!av||av.faena!==f||av.tipo!==tipo||!inScope(av))AREA_VIEW=null;}
   /* ===== Organigrama (árbol ul/li con conectores CSS) ===== */
   function node(a){var kk=kids(a.id).filter(inScope);var exp=!!ORG_EXP[a.id];var viewing=AREA_VIEW===a.id;var hoja=isLeaf(a);var isRoot=!a.parent||!DB.areas.some(function(x){return x.id===a.parent;});
     var x=nodeTot(a.id);var zero=(!x.rAcum&&!x.bAcum);var dv=x.bAcum?(x.rAcum-x.bAcum)/x.bAcum:0;
     var sub=hoja?(a.ceco?'CECO '+a.ceco:UNI):(kk.length+' '+UNIS+(leaves(a.id).length!==kk.length?' · '+leaves(a.id).length+' en total':''));
-    var box='<div class="onode'+(isRoot?' root':'')+(viewing?' on':'')+'">'+
+    var box='<div class="onode'+(isRoot?' root':'')+(viewing?' on':'')+(adm&&ORG_EDIT?' editing':'')+'">'+
       '<div class="on-top">'+(kk.length?'<button class="on-exp" onclick="orgToggle(\''+a.id+'\')" title="'+(exp?'Contraer':'Desplegar')+'">'+ic(exp?'minus':'plus',14)+'</button>':'<span class="on-dot"></span>')+
       '<span class="on-name">'+a.name+'</span>'+
       '<button class="on-eye'+(viewing?' on':'')+'" onclick="orgView(\''+a.id+'\')" title="Ver el detalle de este recuadro">'+ic('eye',15)+'</button></div>'+
       '<div class="on-val'+(zero?' z':'')+'">'+(zero?'sin datos aún':fmtM(x.rAcum)+' <span>/ '+fmtM(x.bAcum)+'</span> <b class="'+(dv>0?'neg':'pos')+'">'+(dv>0?'+':'')+(dv*100).toFixed(0)+'%</b>')+'</div>'+
-      '<div class="on-sub">'+sub+'</div></div>';
+      '<div class="on-sub">'+sub+'</div>'+
+      (adm&&ORG_EDIT?'<div class="on-edit"><button class="on-mini" onclick="event.stopPropagation();areaAddChild(\''+a.id+'\')" title="Agregar '+UNI+' aquí">'+ic('plus',13)+' '+UNI+'</button><button class="on-mini del" onclick="event.stopPropagation();areaDelNode(\''+a.id+'\')" title="Eliminar">'+ic('trash',13)+'</button></div>':'')+
+      '</div>';
     var li='<li>'+box;
     if(kk.length&&exp){li+='<ul>'+kk.map(node).join('')+'</ul>';}
     return li+'</li>';}
+  var editbar=adm?('<div class="orgedit-bar"><button class="btn sm '+(ORG_EDIT?'':'ghost')+'" style="width:auto" onclick="toggleOrgEdit()">'+ic('edit',14)+' '+(ORG_EDIT?'Listo':'Editar estructura')+'</button>'+(ORG_EDIT?'<button class="btn sm" style="width:auto" onclick="areaAddRoot(\''+tipo+'\')">'+ic('plus',14)+' Cabeza de serie</button><span class="muted" style="font-size:11.5px">Usa <b>'+'+ '+UNI+'</b> en cada recuadro para colgar '+UNIS+', o 🗑 para eliminar.</span>':'')+'</div>'):'';
   var tree='<div class="orgwrap"><div class="tree"><ul>'+roots.map(node).join('')+'</ul></div></div>';
   /* ===== Números del recuadro elegido (ojo) o consolidado ===== */
   var target=AREA_VIEW?DB.areas.find(function(x){return x.id===AREA_VIEW;}):null;
@@ -706,7 +720,7 @@ function viewAreaReport(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x
   else{t={bAcum:0,rAcum:0,bAnual:0,proy:0};var bb=Array(12).fill(0),rr=Array(12).fill(0);roots.forEach(function(rt){var x=nodeTot(rt.id);t.bAcum+=x.bAcum;t.rAcum+=x.rAcum;t.bAnual+=x.bAnual;t.proy+=x.proy;var mm=nodeMon(rt.id);for(var m=0;m<12;m++){bb[m]+=mm.b[m];if(mm.r[m]!=null)rr[m]+=mm.r[m];}});mon={b:bb,r:rr.map(function(v,m){return m<=MES_ACTUAL?v:null;})};scopeName='Consolidado '+ML;}
   var ejec=t.bAcum?Math.round(t.rAcum/t.bAcum*100):0;var devY=t.bAcum?(t.rAcum-t.bAcum)/t.bAcum:0;var devA=t.bAnual?(t.proy-t.bAnual)/t.bAnual:0;
   var html='<div class="crumb">'+ic(esM?'mina':'planta',13)+' '+fn+'</div><h2 class="title">'+ML+'</h2>'+scopeBanner()+
-   '<div class="sectit"><span class="lft">Organigrama de costos</span><span class="pill">despliega con + y pincha el ojo para ver números</span></div>'+tree+
+   '<div class="sectit"><span class="lft">Organigrama de costos</span><span class="pill">despliega con + y pincha el ojo para ver números</span></div>'+editbar+tree+
    '<div class="sectit"><span class="lft">'+(target?ic('eye',15)+' Números de: '+target.name:'Consolidado '+ML)+'</span><span class="pill">'+(target?(isLeaf(target)?UNI+(cecoLbl):'grupo · '+leaves(target.id).length+' '+UNIS):'todos los '+UNIS)+'</span></div>'+
    '<div class="heroband"><div class="hb-t">'+(esM?'MINA':'PLANTA')+' · '+fn+cecoLbl+'</div><div class="hb-v">'+scopeName+'</div><div class="hb-s">Real YTD '+fmtM(t.rAcum)+' de '+fmtM(t.bAcum)+' budget · Ejecución '+ejec+'% · Desviación '+(devY>0?'+':'')+(devY*100).toFixed(1)+'%</div></div>'+
    '<div class="statwrap"><div class="ministat"><div class="l">Real acumulado</div><div class="v">'+fmtM(t.rAcum)+'</div></div><div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(t.bAnual)+'</div></div><div class="ministat"><div class="l">Proyección cierre</div><div class="v">'+fmtM(t.proy)+'</div></div><div class="ministat"><div class="l">Desv. proyectada</div><div class="v" style="color:'+(devA>0?'#c0392b':'#1e8e54')+'">'+(devA>0?'+':'')+(devA*100).toFixed(1)+'%</div></div></div>'+
@@ -834,7 +848,7 @@ function cfgDatos(){const url=location.origin+location.pathname;const fn=(DB.fae
     '<div class="field"><label>1º ¿Es de Mina o de Planta?</label><select id="xls_tipo"><option value="mina">Costos MINA</option><option value="planta">Costos PLANTA</option></select></div>'+
     '<div class="dropzone" id="dz" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="event.preventDefault();this.classList.remove(\'drag\');onImportDrop(event)" onclick="document.getElementById(\'xlsFile\').click()"><div class="dzic">'+ic('upload',26)+'</div><h4>2º Arrastra tu Excel aquí (o haz clic)</h4><p>Reconoce tus columnas solo y suma por área y mes</p></div>'+
     '<input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="onImportFile(this)"><div id="importPreview"></div>'+
-    '<div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="openTplEditor()">'+ic('edit',16)+' Usar mi propio formato de Excel</button><button class="btn ghost" style="width:auto" onclick="downloadHistorial()">'+ic('download',16)+' Descargar plantilla lista</button></div></div>'+
+    '<div class="flexbtns" style="margin-top:12px;flex-wrap:wrap"><button class="btn ghost" style="width:auto" onclick="downloadHistorial(\'planta\')">'+ic('download',16)+' Plantilla Planta (vacía)</button><button class="btn ghost" style="width:auto" onclick="downloadHistorial(\'mina\')">'+ic('download',16)+' Plantilla Mina (vacía)</button><button class="btn" style="width:auto" onclick="openTplEditor()">'+ic('edit',16)+' Usar mi propio formato</button></div><p class="muted" style="margin:9px 0 0;font-size:11.5px">Las plantillas traen la estructura oficial (Área, Sub área, Centro de costo y Ceco) ya rellena. Paula solo completa <b>Real</b> y <b>Budget</b>.</p></div>'+
    /* 2 · POR ÁREA */
    '<div class="card" style="margin-top:13px"><div class="sectit" style="margin-top:0"><span class="lft">2 · Un área específica</span><span class="pill">carga por área</span></div>'+
     '<p class="muted" style="margin:0 0 11px;line-height:1.7">¿Tienes el Excel de <b>un área sola</b> (ej: Chancado, Molinos)? Elige el área y súbelo. También puedes <b>editarla a mano</b> mes a mes en <b>Budget</b>.</p>'+
@@ -864,6 +878,27 @@ async function quickAddArea(f,tipo){const el=$('#qa_name');const name=el?el.valu
 async function addAreaCfg(f){const name=$('#na_name').value.trim();if(!name)return toast('Nombre');const tipo=$('#na_tipo').value;const id=uid('a');
   try{await rest('mantos_areas','POST',{id:id,faena:f,tipo:tipo,name:name});const rows=[];for(let m=0;m<12;m++)rows.push({area_id:id,month:m,budget:0,real:null});await rest('mantos_costs','POST',rows);DB.areas.push({id:id,faena:f,tipo:tipo,name:name});DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};render();toast('Área agregada');}catch(e){toast('Error: '+e.message);}}
 async function delArea(id){if(!confirm('¿Eliminar área y sus datos?'))return;try{await rest('mantos_areas?id=eq.'+id,'DELETE');DB.areas=DB.areas.filter(a=>a.id!==id);delete DB.costs[id];EDIT_AREA={};render();toast('Área eliminada');}catch(e){toast('Error: '+e.message);}}
+/* ===== Edición del organigrama (cabezas de serie y equipos/áreas) ===== */
+function toggleOrgEdit(){ORG_EDIT=!ORG_EDIT;render();}
+async function areaAddRoot(tipo){var f=curFaena();var esM=tipo==='mina';var name=prompt(esM?'Nombre de la nueva CABEZA DE SERIE (categoría de equipos):':'Nombre de la nueva CABEZA DE SERIE (grupo):');if(!name)return;name=name.trim();if(!name)return;
+  var id=uid('n');var orden=1+Math.max.apply(null,[0].concat(rootsOf(f,tipo).map(function(a){return a.orden||0;})));
+  var na={id:id,faena:f,tipo:tipo,name:name,parent:null,nivel:0,orden:orden,ceco:null};
+  try{await rest('mantos_areas','POST',na);DB.areas.push(na);ORG_EXP[id]=true;render();toast('Cabeza de serie agregada ✓');}catch(e){toast('Error: '+e.message);}}
+async function areaAddChild(parentId){var p=DB.areas.find(function(x){return x.id===parentId;});if(!p)return;var tipo=p.tipo;var esM=tipo==='mina';var f=p.faena;
+  var name=prompt('Nombre del nuevo '+(esM?'EQUIPO':'ÁREA')+' bajo "'+p.name+'":');if(!name)return;name=name.trim();if(!name)return;
+  var ceco=prompt('Centro de costo (opcional, ej: MB0000000):','')||'';ceco=ceco.trim();
+  var id=uid('n');var orden=1+Math.max.apply(null,[0].concat(kids(parentId).map(function(a){return a.orden||0;})));var nivel=(p.nivel||0)+1;
+  var na={id:id,faena:f,tipo:tipo,name:name,parent:parentId,nivel:nivel,orden:orden,ceco:ceco||null};
+  try{await rest('mantos_areas','POST',na);var rows=[];for(var m=0;m<12;m++)rows.push({area_id:id,month:m,budget:0,real:null});await rest('mantos_costs','POST',rows);DB.areas.push(na);DB.costs[id]={budget:Array(12).fill(0),real:Array(12).fill(null)};ORG_EXP[parentId]=true;render();toast((esM?'Equipo':'Área')+' agregado ✓');}catch(e){toast('Error: '+e.message);}}
+async function areaDelNode(id){var a=DB.areas.find(function(x){return x.id===id;});if(!a)return;var esM=a.tipo==='mina';
+  var ids=[];(function collect(x){ids.push(x);DB.areas.filter(function(n){return n.parent===x;}).forEach(function(n){collect(n.id);});})(id);
+  var kidsN=ids.length-1;
+  var msg=kidsN?('¿Eliminar "'+a.name+'" y TODO lo que cuelga de él ('+kidsN+' debajo)?\n\nNo se puede deshacer.'):('¿Eliminar "'+a.name+'"?\n\nNo se puede deshacer.');
+  if(!confirm(msg))return;
+  var inlist='('+ids.map(encodeURIComponent).join(',')+')';
+  try{await rest('mantos_costs?area_id=in.'+inlist,'DELETE');await rest('mantos_areas?id=in.'+inlist,'DELETE');
+    var rem={};ids.forEach(function(k){rem[k]=true;});DB.areas=DB.areas.filter(function(n){return !rem[n.id];});ids.forEach(function(k){delete DB.costs[k];});
+    if(AREA_VIEW&&rem[AREA_VIEW])AREA_VIEW=null;render();toast('Eliminado ✓');}catch(e){toast('Error: '+e.message);}}
 async function addRole(){const n=$('#nrole_name').value.trim();if(!n)return toast('Nombre');const id=uid('r');try{await rest('mantos_roles','POST',{id:id,name:n,perms:['dashboard'],view_only:false});DB.roles.push({id:id,name:n,perms:['dashboard'],view_only:false});render();toast('Cargo creado');}catch(e){toast('Error: '+e.message);}}
 async function delRole(id){if(DB.users.some(u=>u.role_id===id))return toast('Hay usuarios con este cargo');if(!confirm('¿Eliminar cargo?'))return;try{await rest('mantos_roles?id=eq.'+id,'DELETE');DB.roles=DB.roles.filter(r=>r.id!==id);render();toast('Cargo eliminado');}catch(e){toast('Error: '+e.message);}}
 async function togglePerm(rid,m){const r=DB.roles.find(x=>x.id===rid);if(!r)return;const has=(r.perms||[]).indexOf(m)>=0;r.perms=has?r.perms.filter(x=>x!==m):(r.perms||[]).concat([m]);
@@ -875,9 +910,9 @@ async function genClave(){const name=$('#gc_name').value.trim();if(!name)return 
 function showClave(name,un,p,roleId){const r=DB.roles.find(x=>x.id===roleId)||{};modal('<h3>'+ic('key',18)+' Clave generada</h3><div class="card" style="margin-bottom:12px"><div class="perm"><span>Persona</span><b>'+name+'</b></div><div class="perm"><span>Usuario</span><b style="color:var(--copper2)">'+un+'</b></div><div class="perm"><span>Clave</span><b style="color:var(--copper2)">'+p+'</b></div><div class="perm"><span>Perfil</span><b>'+(r.name||'')+(r.view_only?' (solo ver)':'')+'</b></div></div><div class="flexbtns"><button class="btn" style="width:auto" onclick="copyAccess(\''+name+'\',\''+un+'\',\''+p+'\')">'+ic('copy',16)+' Copiar</button><button class="btn wa" style="width:auto" onclick="waAccess(\''+name+'\',\''+un+'\',\''+p+'\')">'+ic('wa',16)+' WhatsApp</button></div><button class="btn ghost" style="margin-top:8px" onclick="closeModal()">Cerrar</button>');}
 async function delUser(un){if(SESSION&&SESSION.username===un)return toast('No puedes eliminarte');if(!confirm('¿Eliminar usuario '+un+'?'))return;try{await rpc('mantos_delete_user',{p_username:un});DB.users=DB.users.filter(u=>u.username!==un);render();toast('Usuario eliminado');}catch(e){toast('Error: '+e.message);}}
 function openUserAreas(un){var u=DB.users.find(function(x){return x.username===un;});if(!u)return;var cur=(u.area_ids||[]);var f=curFaena();
-  var ars=DB.areas.filter(function(a){return a.faena===f;});
-  var grp=function(tipo,lbl){var items=ars.filter(function(a){return a.tipo===tipo;});if(!items.length)return '';return '<div class="muted" style="margin:10px 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.5px">'+lbl+'</div>'+items.map(function(a){var on=cur.indexOf(a.id)>=0;return '<label class="perm" style="cursor:pointer"><span>'+ic(tipo==='mina'?'mina':'planta',15)+' '+a.name+'</span><input type="checkbox" data-aid="'+a.id+'" '+(on?'checked':'')+' style="width:auto"></label>';}).join('');};
-  modal('<h3>'+ic('mina',18)+' Permisos para ver áreas · '+(u.name||un)+'</h3><div class="muted" style="margin-bottom:6px">Marca lo que verá este usuario al entrar. Si <b>no marcas nada</b>, ve el <b style="color:var(--copper2)">consolidado</b> (todas las áreas) — ideal para el gerente.</div><div id="ua_list" style="max-height:44vh;overflow:auto">'+(grp('mina','Mina')+grp('planta','Planta')||'<div class="empty">Sin áreas en esta faena.</div>')+'</div><div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="saveUserAreas(\''+un+'\')">'+ic('check',16)+' Guardar áreas</button><button class="btn ghost" style="width:auto" onclick="closeModal()">Cancelar</button></div>');}
+  var grp=function(tipo,lbl){var items=rootsOf(f,tipo);if(!items.length)return '';return '<div class="muted" style="margin:12px 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.5px">'+ic(tipo==='mina'?'mina':'planta',13)+' '+lbl+'</div>'+items.map(function(a){var on=cur.indexOf(a.id)>=0;var n=leaves(a.id).length;return '<label class="perm" style="cursor:pointer"><span>'+ic(tipo==='mina'?'mina':'planta',15)+' '+a.name+' <span class="muted" style="font-size:10.5px;font-weight:600">· '+n+' '+(tipo==='mina'?'equipos':'áreas')+'</span></span><input type="checkbox" data-aid="'+a.id+'" '+(on?'checked':'')+' style="width:auto"></label>';}).join('');};
+  var body=grp('planta','Planta')+grp('mina','Mina');
+  modal('<h3>'+ic('shield',18)+' Permisos para ver áreas · '+(u.name||un)+'</h3><div class="muted" style="margin-bottom:6px">Marca los <b>grupos</b> (cabezas de serie) que verá este usuario — de <b style="color:var(--copper2)">Planta</b> y/o <b style="color:var(--copper2)">Mina</b>. Al marcar un grupo, ve todo lo que cuelga de él. Si <b>no marcas nada</b>, ve el <b style="color:var(--copper2)">consolidado</b> (todo) — ideal para el gerente.</div><div id="ua_list" style="max-height:44vh;overflow:auto">'+(body||'<div class="empty">Sin áreas en esta faena.</div>')+'</div><div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="saveUserAreas(\''+un+'\')">'+ic('check',16)+' Guardar áreas</button><button class="btn ghost" style="width:auto" onclick="closeModal()">Cancelar</button></div>');}
 async function saveUserAreas(un){var ids=[].slice.call(document.querySelectorAll('#ua_list input[type=checkbox]')).filter(function(c){return c.checked;}).map(function(c){return c.getAttribute('data-aid');});
   try{await rpc('mantos_set_user_areas',{p_username:un,p_areas:ids});var u=DB.users.find(function(x){return x.username===un;});if(u)u.area_ids=ids;if(SESSION&&SESSION.username===un)SCOPE=(!isAdmin()&&ids.length)?ids.slice():null;closeModal();render();toast('Áreas asignadas: '+(ids.length?ids.length:'consolidado'));}catch(e){toast('Error: '+e.message);}}
 async function addCustomModule(){const name=$('#nm_name').value.trim();if(!name)return toast('Nombre');const id=uid('m');const mod={id:id,name:name,descr:$('#nm_desc').value.trim(),icon:$('#nm_icon').value,cols:[],rows:[]};
@@ -965,15 +1000,16 @@ function genTemplate(cfg){const f=curFaena();const cols=(cfg.cols&&cfg.cols.leng
   const ws=XLSX.utils.aoa_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,(cfg.sheet||'Planilla'));XLSX.writeFile(wb,'Modelo_'+(cfg.name?cfg.name.replace(/[^a-z0-9]+/gi,'_'):f)+'.xlsx');}
 function downloadTemplate(){genTemplate(tplCfg());toast('Plantilla descargada');}
 const CUENTAS_SAP=[['4080537900','Ítems Reparados'],['4080536300','Repuestos Mecánicos'],['4070174100','Contratistas de Mantención'],['4080536000','Repuestos Eléctricos'],['4060233800','Lubricantes y Grasas'],['4040180100','Energía Eléctrica'],['4070470600','Transporte Personal'],['4070473000','Aseo y Serv. al Personal'],['4070574200','Contratistas Operación'],['4080639900','Varios Suministros'],['4060133600','Aceros'],['4070371300','Arriendo Maquinaria'],['4070575000','Software / Hardware']];
-function downloadHistorial(){const f=curFaena();const fn=(DB.faenas.find(x=>x.id===f)||{}).name||f;const ars=leafAreasOf(f);
-  const head=['MES','Centro de Coste','Área','Cuenta de Mayor','REAL 2026','BUDGET 2026'];const data=[head];
-  ars.forEach(function(a){const c=DB.costs[a.id]||{budget:[],real:[]};for(let m=0;m<=MES_ACTUAL;m++){data.push([MESES[m],a.name,(a.tipo==='mina'?'Mina':'Planta'),'',(c.real&&c.real[m]!=null?c.real[m]:''),(c.budget?(c.budget[m]||''):'')]);}});
-  if(!ars.length){for(let m=0;m<=MES_ACTUAL;m++)data.push([MESES[m],'','','','','']);}
-  const wsH=XLSX.utils.aoa_to_sheet(data);wsH['!cols']=[{wch:11},{wch:26},{wch:9},{wch:26},{wch:13},{wch:13}];
-  const wsC=XLSX.utils.aoa_to_sheet([['Código SAP','Cuenta de Mayor (categoría)']].concat(CUENTAS_SAP));wsC['!cols']=[{wch:14},{wch:32}];
-  const wsI=XLSX.utils.aoa_to_sheet([['MANTOS CONTROL 360 — Plantilla Historial de Gastos · '+fn],[''],['1) Completa REAL 2026 y BUDGET 2026 por Mes y Centro de Coste (en kUSD o USD; la plataforma detecta la unidad).'],['2) La columna Cuenta de Mayor es opcional — usa los códigos de la hoja "Cuentas".'],['3) Sube el archivo en Configuración → Datos / Excel, eligiendo Mina o Planta.'],['4) La plataforma suma por Área y Mes automáticamente y actualiza los dashboards.']]);wsI['!cols']=[{wch:104}];
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,wsH,'Historial 2026');XLSX.utils.book_append_sheet(wb,wsC,'Cuentas');XLSX.utils.book_append_sheet(wb,wsI,'Instrucciones');
-  XLSX.writeFile(wb,'Historial_Gastos_'+f+'_2026.xlsx');toast('Plantilla Historial descargada');}
+function downloadHistorial(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||f;var tl=(tipo==='mina'?'Mina':tipo==='planta'?'Planta':'Costos');
+  var ars=leafAreasOf(f,tipo||'all');
+  var head=['Mes','Centro de costo','Ceco','Sub areas','Cuenta mayor','Area','Claco','Orden','Asignacion (orden)','Real','Budget'];var data=[head];
+  ars.forEach(function(a){var anc=ancestors(a);var area=anc.length?anc[anc.length-1].name:a.name;var subarea=(anc.length>=2?anc[0].name:'');
+    for(var m=0;m<12;m++){data.push([MESES[m]+' '+ANIO,a.name,(a.ceco||''),subarea,'',area,'','','','','']);}});
+  if(!ars.length){for(var m0=0;m0<12;m0++)data.push([MESES[m0]+' '+ANIO,'','','','','','','','','','']);}
+  var wsH=XLSX.utils.aoa_to_sheet(data);wsH['!cols']=[{wch:13},{wch:30},{wch:14},{wch:24},{wch:16},{wch:14},{wch:10},{wch:12},{wch:18},{wch:12},{wch:12}];
+  var wsI=XLSX.utils.aoa_to_sheet([['MANTOS CONTROL 360 — Plantilla '+tl+' '+ANIO+' · '+fn],[''],['Se genera con la estructura ACTUAL del organigrama (se actualiza sola al agregar o quitar '+(tipo==='mina'?'equipos':'áreas')+').'],['1) Completa SOLO las columnas Real y Budget (en USD). Lo demás ya viene con la estructura oficial.'],['2) No cambies el Ceco: es la llave que engancha cada línea con la plataforma.'],['3) Cuenta mayor / Claco / Orden / Asignación son opcionales (datos SAP).'],['4) Súbela en Configuración → Cargar Datos, eligiendo '+(tipo?tl:'Mina o Planta')+'.']]);wsI['!cols']=[{wch:112}];
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,wsH,'Planilla '+ANIO);XLSX.utils.book_append_sheet(wb,wsI,'Instrucciones');
+  var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});offerDownload(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Plantilla_'+tl+'_'+f+'_'+ANIO+'.xlsx','plantilla '+tl);}
 function downloadOL(){const f=curFaena();const ars=leafAreasOf(f);const per=Math.min(12,MES_ACTUAL+1);const cat='OL'+(''+ANIO).slice(2)+(per<10?'0'+per:per);
   const head=['CATEGORY','RYEAR','POPER','RBUKRS','RCNTR','NOMBRE CECO','ÁREA','RACCT','CLACO','KSL','RKCUR'];const data=[head];
   ars.forEach(function(a){CUENTAS_SAP.slice(0,3).forEach(function(ct){data.push([cat,ANIO,per,'3020','',a.name,(a.tipo==='mina'?'Mina':'Planta'),ct[0],ct[1],'','USD']);});});
