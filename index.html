@@ -357,7 +357,7 @@ const MODICON={dashboard:'dashboard',cierre:'doc',areasrep:'planta',equipmina:'m
 const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MES_ACTUAL=5, ANIO=2026;
-const APP_VERSION='2026-08-18b · historial-mensual + carga-incremental + formatos-oficiales';
+const APP_VERSION='2026-08-18c · historial-mensual + aviso-preciso + carga-incremental';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -1105,7 +1105,7 @@ async function doImport(modo){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPOR
   closeModal();
   var guardadas=0;
   if(modo==='archivar'){toast('Guardando copia en el historial…');
-    try{guardadas=await snapshotMonths(f,tipo,monthsWithData(f,tipo,monthsInImport(p)),'Respaldo antes de cargar '+(IMPORT.name||'un Excel'));}
+    try{guardadas=await snapshotMonths(f,tipo,conflictMonths(f,tipo,p),'Respaldo antes de cargar '+(IMPORT.name||'un Excel'));}
     catch(e){return toast('No pude guardar el historial, carga cancelada: '+e.message);}}
   toast('Cargando datos de '+tl+'…');
   /* 1) CARGA INCREMENTAL: no se borra nada. Solo se sobrescriben las celdas (equipo x mes)
@@ -1134,12 +1134,29 @@ async function doImport(modo){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPOR
     if(noMatch.length)setTimeout(function(){alert('⚠️ '+noMatch.length+' fila(s) no coincidieron con ningún Ceco/equipo del organigrama y se OMITIERON (no se crearon cabezas nuevas):\n\n'+noMatch.slice(0,25).join('\n')+'\n\nRevisa que el Ceco de esas filas exista en el árbol.');},350);
   }catch(e){toast('Error: '+e.message);}}
 /* ===== HISTORIAL MENSUAL DE CARGAS (versiones por mes, año en curso) ===== */
+function escHtml(x){return (x==null?'':''+x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function fmtFecha(x){try{var d=new Date(x);return d.toLocaleDateString('es-CL')+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});}catch(e){return x||'';}}
 function leavesOf(f,tipo){return DB.areas.filter(function(a){return a.faena===f&&a.tipo===tipo&&isLeafArea(a);});}
 function histOf(f,tipo){return (DB.history||[]).filter(function(h){return h.faena===f&&h.tipo===tipo&&h.anio===ANIO;});}
 function monthsInImport(p){var ms={};Object.keys(p.agg).forEach(function(k){var G=p.agg[k];for(var m=0;m<12;m++)if(G.hb[m]||G.hr[m])ms[m]=1;});return Object.keys(ms).map(Number).sort(function(a,b){return a-b;});}
 function monthTotals(f,tipo,m){var tr=0,tb=0,n=0;leavesOf(f,tipo).forEach(function(a){var c=DB.costs[a.id];if(!c)return;var rv=(c.real[m]==null?0:Number(c.real[m]));var bv=Number(c.budget[m]||0);if(rv===0&&bv===0)return;tr+=rv;tb+=bv;n++;});return {real:tr,budget:tb,n:n};}
 function monthsWithData(f,tipo,months){return months.filter(function(m){return monthTotals(f,tipo,m).n>0;});}
+/* Meses donde el Excel PISARÍA un valor ya cargado, comparando métrica a métrica.
+   Así cargar el Real de mayo no alarma solo porque el Budget del año ya estaba puesto. */
+function conflictMonths(f,tipo,p){
+  function nC(s){return (''+s).toUpperCase().replace(/\s+/g,'').trim();}
+  function nN(s){return (''+s).toLowerCase().replace(/\s+/g,' ').trim();}
+  var mapCeco={},mapName={};
+  leavesOf(f,tipo).forEach(function(a){if(a.ceco)mapCeco[nC(a.ceco)]=a;if(a.name)mapName[nN(a.name)]=a;});
+  var ms={};
+  Object.keys(p.agg).forEach(function(k){var G=p.agg[k],t=null,cands=[];
+    if(G.ceco)cands.push(G.ceco);if(G.name)cands.push(G.name);
+    for(var i=0;i<cands.length&&!t;i++)t=mapCeco[nC(cands[i])]||mapName[nN(cands[i])];
+    if(!t)return;var c=DB.costs[t.id];if(!c)return;
+    for(var m=0;m<12;m++){
+      if(G.hr[m]&&c.real[m]!=null&&Number(c.real[m])!==0)ms[m]=1;
+      if(G.hb[m]&&Number(c.budget[m]||0)!==0)ms[m]=1;}});
+  return Object.keys(ms).map(Number).sort(function(a,b){return a-b;});}
 
 /* Guarda una copia del estado ACTUAL de esos meses antes de pisarlos */
 async function snapshotMonths(f,tipo,months,motivo){
@@ -1166,7 +1183,7 @@ async function snapshotMonths(f,tipo,months,motivo){
 /* Puerta de entrada: pregunta antes de pisar un mes que ya tiene datos */
 async function confirmImport(){if(!IMPORT||!IMPORT.parsed.ok)return;
   var f=curFaena(),tipo=($('#xls_tipo')&&$('#xls_tipo').value)||'mina',tl=(tipo==='mina'?'Mina':'Planta');
-  var choque=monthsWithData(f,tipo,monthsInImport(IMPORT.parsed));
+  var choque=conflictMonths(f,tipo,IMPORT.parsed);
   if(!choque.length)return doImport('limpio');
   var filas=choque.map(function(m){var t=monthTotals(f,tipo,m);
     var nv=histOf(f,tipo).filter(function(h){return h.month===m;}).length;
@@ -1188,7 +1205,7 @@ function cfgHistorial(){
   var head='<div class="card" style="margin-top:13px"><div class="sectit" style="margin-top:0"><span class="lft">'+ic('clock',16)+' Historial mensual de cargas</span>'+(hs.length?'<span class="pill">'+hs.length+' versión'+(hs.length>1?'es':'')+'</span>':'')+'</div>';
   if(!hs.length)return head+'<div class="empty">Todavía no hay versiones guardadas. Cada vez que cargues un mes que ya tenía datos, la plataforma te ofrecerá dejar una copia aquí.</div></div>';
   var rows=hs.slice(0,40).map(function(h){
-    return '<div class="lrow"><div class="ic">'+ic('doc',18)+'</div><div class="mid"><b>'+MESES[h.month]+' '+h.anio+' · v'+h.version+' <span class="muted">('+(h.tipo==='mina'?'Mina':'Planta')+')</span></b><span>'+fmtFecha(h.created_at)+' · '+(h.created_by||'—')+' · Real '+fmtK(h.total_real)+' · '+(h.n_areas||0)+' equipos</span></div><button class="iconbtn" title="Ver detalle" onclick="histView(\''+h.id+'\')">'+ic('eye',16)+'</button></div>';}).join('');
+    return '<div class="lrow"><div class="ic">'+ic('doc',18)+'</div><div class="mid"><b>'+MESES[h.month]+' '+h.anio+' · v'+h.version+' <span class="muted">('+(h.tipo==='mina'?'Mina':'Planta')+')</span></b><span>'+fmtFecha(h.created_at)+' · '+escHtml(h.created_by||'—')+' · Real '+fmtK(h.total_real)+' · '+(h.n_areas||0)+' equipos</span></div><button class="iconbtn" title="Ver detalle" onclick="histView(\''+h.id+'\')">'+ic('eye',16)+'</button></div>';}).join('');
   return head+'<p class="muted" style="margin:0 0 10px;line-height:1.6">Cada carga que reemplaza un mes deja aquí una copia consultable, con su detalle por Ceco. Sirve para ver cómo fue cambiando el cierre y volver atrás si hace falta.</p>'+
    rows+'<div class="flexbtns" style="margin-top:12px;flex-wrap:wrap"><button class="btn ghost" style="width:auto" onclick="histChart(\'planta\')">'+ic('proyeccion',16)+' Gráfica histórica Planta</button><button class="btn ghost" style="width:auto" onclick="histChart(\'mina\')">'+ic('proyeccion',16)+' Gráfica histórica Mina</button></div></div>';}
 
@@ -1197,9 +1214,9 @@ async function histView(id){
   try{var r=await rest('mantos_cost_history?id=eq.'+encodeURIComponent(id)+'&select=*');var full=r&&r[0];
     if(!full)return toast('No encontré esa versión');
     var rows=(full.data||[]).slice().sort(function(a,b){return (b.real||0)-(a.real||0);}).map(function(d){
-      return '<div class="perm"><span>'+(d.name||d.ceco||'—')+(d.ceco?' <span class="muted">'+d.ceco+'</span>':'')+'</span><b>'+fmtK(d.real||0)+' <span class="muted" style="font-weight:400">/ '+fmtK(d.budget||0)+'</span></b></div>';}).join('');
+      return '<div class="perm"><span>'+escHtml(d.name||d.ceco||'—')+(d.ceco?' <span class="muted">'+escHtml(d.ceco)+'</span>':'')+'</span><b>'+fmtK(d.real||0)+' <span class="muted" style="font-weight:400">/ '+fmtK(d.budget||0)+'</span></b></div>';}).join('');
     modalWide('<h3>'+ic('doc',18)+' '+MESES[h.month]+' '+h.anio+' · versión '+h.version+'</h3>'+
-      '<p class="muted" style="line-height:1.6">'+(h.tipo==='mina'?'Mina':'Planta')+' · guardado el '+fmtFecha(h.created_at)+' por '+(h.created_by||'—')+(h.motivo?'<br>'+h.motivo:'')+'</p>'+
+      '<p class="muted" style="line-height:1.6">'+(h.tipo==='mina'?'Mina':'Planta')+' · guardado el '+fmtFecha(h.created_at)+' por '+escHtml(h.created_by||'—')+(h.motivo?'<br>'+escHtml(h.motivo):'')+'</p>'+
       '<div class="statwrap" style="margin:10px 0"><div class="ministat"><div class="l">Real</div><div class="v">'+fmtK(h.total_real)+'</div></div><div class="ministat"><div class="l">Budget</div><div class="v">'+fmtK(h.total_budget)+'</div></div><div class="ministat"><div class="l">Equipos</div><div class="v">'+(h.n_areas||0)+'</div></div></div>'+
       '<div class="sectit"><span class="lft">Detalle por Ceco</span></div>'+(rows||'<div class="empty">Sin detalle</div>')+
       '<div style="height:14px"></div>'+
