@@ -356,8 +356,9 @@ const MODULES={dashboard:{name:'Dashboard General'},cierre:{name:'Cierre de Mes'
 const MODICON={dashboard:'dashboard',cierre:'doc',areasrep:'planta',equipmina:'mina',budget:'budget',informes:'informes',proyeccion:'proyeccion',usuarios:'usuarios',claves:'key',config:'config'};
 const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const MES_ACTUAL=5, ANIO=2026;
-const APP_VERSION='2026-08-18d · PPT formato corporativo + historial mensual';
+const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
+const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
+const APP_VERSION='2026-08-18f · agosto-visible + fechas-Excel + cierre-automatico';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -378,12 +379,30 @@ function parseNum(v){if(v==null)return null;if(typeof v==='number')return isFini
   else if(hasC){const p=s.split(',');if(p.length>1&&p[p.length-1].length===3)s=s.replace(/,/g,'');else s=s.replace(',','.');}
   else if(hasD){const p=s.split('.');if(p.length>2||(p.length===2&&p[1].length===3))s=s.replace(/\./g,'');}
   const n=parseFloat(s);return isFinite(n)?n:null;}
-function monthIndex(v){if(v==null)return -1;if(typeof v==='number'&&v>=1&&v<=12)return Math.floor(v)-1;let s=(''+v).trim().toLowerCase();if(!s)return -1;
-  if(/^\d{1,2}$/.test(s)){const n=parseInt(s,10);if(n>=1&&n<=12)return n-1;}
-  const k=s.slice(0,3);let i=MESES.findIndex(m=>m.toLowerCase()===k);if(i>=0)return i;
-  i=MES_FULL.findIndex(m=>m.slice(0,3)===k);if(i>=0)return i;
-  i=MES_EN.findIndex(m=>m.slice(0,3)===k);if(i>=0)return i;
-  const d=new Date(s);if(!isNaN(d.getTime())&&/\d/.test(s))return d.getMonth();
+function monthIndex(v){
+  if(v==null)return -1;
+  if(v instanceof Date&&!isNaN(v.getTime()))return v.getMonth();
+  if(typeof v==='number'){
+    if(v>=1&&v<=12)return Math.floor(v)-1;
+    /* número de serie de Excel (días desde 1899-12-30) — antes caía en enero */
+    if(v>=20000&&v<=80000){var ds=new Date(Math.round((v-25569)*86400000));return isNaN(ds.getTime())?-1:ds.getUTCMonth();}
+    return -1;}
+  var s=(''+v).trim().toLowerCase();if(!s)return -1;
+  if(/^\d{1,2}$/.test(s)){var n=parseInt(s,10);if(n>=1&&n<=12)return n-1;}
+  if(/^\d{5}$/.test(s)){var sv=parseInt(s,10);if(sv>=20000&&sv<=80000){var d2=new Date(Math.round((sv-25569)*86400000));if(!isNaN(d2.getTime()))return d2.getUTCMonth();}}
+  /* aaaa-mm-dd */
+  var iso=s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  if(iso){var mi=parseInt(iso[2],10);if(mi>=1&&mi<=12)return mi-1;}
+  /* fecha chilena dd-mm-aaaa: el DÍA va primero (antes se leía al modo gringo y agosto caía en enero) */
+  var cl=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  if(cl){var mc=parseInt(cl[2],10);if(mc>=1&&mc<=12)return mc-1;}
+  var k=s.slice(0,3);
+  var i=MESES.findIndex(function(m){return m.toLowerCase()===k;});if(i>=0)return i;
+  i=MES_FULL.findIndex(function(m){return m.slice(0,3)===k;});if(i>=0)return i;
+  i=MES_EN.findIndex(function(m){return m.slice(0,3)===k;});if(i>=0)return i;
+  /* nombre del mes en cualquier parte del texto: "cierre agosto 2026" */
+  for(i=0;i<12;i++){if(s.indexOf(MES_FULL[i])>=0)return i;}
+  var d3=new Date(s);if(!isNaN(d3.getTime())&&/\d/.test(s))return d3.getMonth();
   return -1;}
 function findCol(head,syns){for(let j=0;j<syns.length;j++){for(let i=0;i<head.length;i++){if(head[i]===syns[j])return i;}}for(let j=0;j<syns.length;j++){for(let i=0;i<head.length;i++){if(head[i].indexOf(syns[j])>=0)return i;}}return -1;}
 const COLSYN={area:['área','area','centro de coste2','nombre ceco','glosa','concepto'],mes:['mes','meses','periodo','período','month','fecha'],bud:['budget','bdg','presupuesto','ppto','presup','ol 3','ol 6','ol3','ol6','outlook','forecast','plan','meta'],real:['real','ejecut','ejec','gasto','actual','incurrido','consumo','gastado']};
@@ -509,6 +528,7 @@ async function fetchAll(){
   DB.costs={};areas.forEach(a=>DB.costs[a.id]={budget:Array(12).fill(0),real:Array(12).fill(null)});
   costs.forEach(c=>{if(!DB.costs[c.area_id])DB.costs[c.area_id]={budget:Array(12).fill(0),real:Array(12).fill(null)};DB.costs[c.area_id].budget[c.month]=c.budget==null?0:Number(c.budget);DB.costs[c.area_id].real[c.month]=c.real==null?null:Number(c.real);});
   DB.dataUpdated=costs.reduce(function(m,c){return (c.updated_at&&(!m||c.updated_at>m))?c.updated_at:m;},null);
+  try{autoCierreMes();}catch(e){}
 }
 async function refreshData(){const b=$('#refBtn');b.innerHTML='<span class="spin"></span>';try{await fetchAll();render();toast('Datos actualizados');}catch(e){toast('Error al actualizar');}b.innerHTML=ic('refresh',17);}
 function clearCache(){if(!confirm('¿Limpiar la caché y traer la última versión de la plataforma? Se recargará la página.'))return;
@@ -532,8 +552,12 @@ function render(){if(!SESSION)return;$('#tb_name').textContent=SESSION.name;$('#
 
 /* ===== Vistas ===== */
 /* ===== Cierre de Mes (dashboard ejecutivo automático) ===== */
-let CIERRE_MES=Math.max(0,MES_ACTUAL-1);
-function setCierreMes(v){CIERRE_MES=+v;render();}
+let CIERRE_MES=Math.max(0,MES_ACTUAL-1),CIERRE_MANUAL=false;
+function setCierreMes(v){CIERRE_MES=+v;CIERRE_MANUAL=true;render();}
+/* Último mes con Real cargado: si Paula sube agosto, el Cierre se abre en agosto y no en julio */
+function ultimoMesConDatos(f){for(var mm=11;mm>=0;mm--){if(monthTot(f,null,mm).hasR)return mm;}return -1;}
+function autoCierreMes(force){if(CIERRE_MANUAL&&!force)return;
+  var u=ultimoMesConDatos(curFaena());if(u>=0){CIERRE_MES=u;if(force)CIERRE_MANUAL=false;}}
 function monthTot(f,tipo,m){const ar=leafAreasOf(f,tipo);let r=0,b=0,hasR=false;ar.forEach(a=>{const c=C(a.id);b+=c.budget[m]||0;if(c.real[m]!=null){r+=c.real[m];hasR=true;}});return {r:r,b:b,hasR:hasR};}
 function ytdTot(f,tipo,m){let r=0,b=0;for(let k=0;k<=m;k++){const t=monthTot(f,tipo,k);r+=t.r;b+=t.b;}return {r:r,b:b};}
 function viewCierre(){const f=curFaena();const m=Math.min(11,Math.max(0,CIERRE_MES));const fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';
@@ -1194,8 +1218,11 @@ function parseWorkbook(rows){
   const col=i=>(i>=0&&rawHead[i]?rawHead[i]:'—');
   if(mesC<0||(!byCeco&&nameC<0&&areaC<0))return {ok:false,reason:'No encontré columnas de <b>Mes</b> y <b>Ceco/Centro de costo</b>. Revisa que la planilla tenga encabezados.'};
   if(realC<0&&budC<0)return {ok:false,reason:'No encontré columnas de <b>Real</b> ni <b>Budget/OL</b>.'};
-  const agg={};let maxv=0,nrows=0;
-  for(let i=hr+1;i<rows.length;i++){const row=rows[i];if(!row)continue;const m=monthIndex(row[mesC]);if(m<0)continue;
+  const agg={};let maxv=0,nrows=0;var badMes=0,badEj=[];
+  for(let i=hr+1;i<rows.length;i++){const row=rows[i];if(!row)continue;const m=monthIndex(row[mesC]);
+    if(m<0){var vacia=!row.some(function(c){return c!=null&&(''+c).trim()!=='';});
+      if(!vacia){badMes++;if(badEj.length<4)badEj.push('fila '+(i+1)+': "'+(row[mesC]==null?'(vacío)':(''+row[mesC]).slice(0,20))+'"');}
+      continue;}
     var ceco=(cecoKeyC>=0&&row[cecoKeyC]!=null)?(''+row[cecoKeyC]).trim():'';
     var name=(nameC>=0&&row[nameC]!=null)?(''+row[nameC]).trim():'';
     if(!name&&areaC>=0&&row[areaC]!=null)name=(''+row[areaC]).trim();
@@ -1206,10 +1233,11 @@ function parseWorkbook(rows){
     if(budC>=0){const bv=parseNum(row[budC]);if(bv!=null){agg[key].b[m]+=bv;agg[key].hb[m]=true;maxv=Math.max(maxv,Math.abs(bv));}}
     if(realC>=0){const rv=parseNum(row[realC]);if(rv!=null){agg[key].r[m]+=rv;agg[key].hr[m]=true;maxv=Math.max(maxv,Math.abs(rv));}}
     nrows++;}
+  var mesesDet=[];for(var mm=0;mm<12;mm++){var hay=Object.keys(agg).some(function(k){return agg[k].hb[mm]||agg[k].hr[mm];});if(hay)mesesDet.push(MESES[mm]);}
   const factor=maxv>=100000?0.001:1;const names=Object.keys(agg);let cells=0;
   names.forEach(g=>{for(let m=0;m<12;m++)if(agg[g].hb[m]||agg[g].hr[m])cells++;});
   const sample=names.map(g=>{let y=0;for(let m=0;m<12;m++)if(agg[g].hr[m])y+=agg[g].r[m];return {n:agg[g].name||g,ytd:y*factor};}).sort((x,y)=>y.ytd-x.ytd).slice(0,6);
-  return {ok:true,agg,byCeco,factor,unidad:factor===1?'kUSD':'USD → kUSD',nrows,nAreas:names.length,nCells:cells,sample,
+  return {ok:true,agg,byCeco,factor,unidad:factor===1?'kUSD':'USD → kUSD',nrows,nAreas:names.length,nCells:cells,sample,badMes:badMes,badEj:badEj,meses:mesesDet,
     cols:{mes:col(mesC),area:col(byCeco?cecoKeyC:(nameC>=0?nameC:areaC)),real:col(realC),bud:col(budC)},realC,budC};
 }
 function onImportFile(inp){const f=inp.files[0];if(f)readImportFile(f);}
@@ -1222,7 +1250,8 @@ function renderImportPreview(){const el=$('#importPreview');if(!el)return;if(!IM
   const samp=p.sample.map(s=>'<div class="barrow"><div class="top"><b>'+s.n+'</b><span class="n">'+fmtK(s.ytd)+'</span></div></div>').join('');
   el.innerHTML='<div class="card" style="margin-top:14px"><span class="pill-ok">'+ic('check',14)+' '+IMPORT.name+' · '+p.nrows+' filas leídas</span>'+
     '<div class="mapgrid">'+mc('Mes',p.cols.mes,false)+mc('Área / CECO',p.cols.area,false)+mc('Real',p.cols.real,p.realC<0)+mc('Budget / OL',p.cols.bud,p.budC<0)+'</div>'+
-    '<div class="statwrap" style="margin:4px 0 6px"><div class="ministat"><div class="l">Áreas detectadas</div><div class="v">'+p.nAreas+'</div></div><div class="ministat"><div class="l">Celdas de costo</div><div class="v">'+p.nCells+'</div></div><div class="ministat"><div class="l">Unidad</div><div class="v" style="font-size:15px">'+p.unidad+'</div></div></div>'+
+    '<div class="statwrap" style="margin:4px 0 6px"><div class="ministat"><div class="l">Áreas detectadas</div><div class="v">'+p.nAreas+'</div></div><div class="ministat"><div class="l">Celdas de costo</div><div class="v">'+p.nCells+'</div></div><div class="ministat"><div class="l">Meses del archivo</div><div class="v" style="font-size:14px">'+((p.meses&&p.meses.length)?p.meses.join(' · '):'—')+'</div></div><div class="ministat"><div class="l">Unidad</div><div class="v" style="font-size:15px">'+p.unidad+'</div></div></div>'+
+    (p.badMes?'<div class="banner" style="border-color:rgba(231,76,60,.4);background:rgba(231,76,60,.07);margin:2px 0 8px">'+ic('shield',18)+'<div><b>'+p.badMes+' fila(s) sin mes reconocible</b> — se van a omitir. Revisa la columna <b>Mes</b> de esas filas.<br><span class="muted">'+escHtml(p.badEj.join(' · '))+'</span></div></div>':'')+
     '<div class="sectit"><span class="lft">Vista previa · top áreas (YTD Real)</span></div><div class="card" style="background:#fff">'+(samp||'<div class="empty">Sin datos numéricos</div>')+'</div>'+
     '<div class="banner" style="border-color:rgba(46,163,106,.4);background:rgba(46,163,106,.08);margin-top:10px">'+ic('shield',18)+'<div>Al confirmar, las cifras se <b>enganchan por Ceco</b> a cada equipo/área. El <b>organigrama se mantiene intacto</b> y <b>no se borra nada</b>: solo se sobrescriben los meses que traiga este archivo. Todo lo cargado antes se conserva hasta que un administrador use «Restablecer datos a cero».</div></div>'+
     '<div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="confirmImport()">'+ic('check',16)+' Confirmar y cargar '+tl+'</button><button class="btn ghost" style="width:auto" onclick="IMPORT=null;renderImportPreview()">Cancelar</button></div></div>';
@@ -1256,7 +1285,10 @@ async function doImport(modo){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPOR
     for(let m=0;m<12;m++){if(!G.hb[m]&&!G.hr[m])continue;if(G.hb[m])c.budget[m]=G.b[m]*p.factor;if(G.hr[m])c.real[m]=G.r[m]*p.factor;touched[target.id+'|'+m]={area_id:target.id,month:m};}}
   /* 3) guardar en la nube SOLO las celdas que venían en el Excel — el resto del año queda intacto */
   const ups=[];Object.keys(touched).forEach(function(k){var t=touched[k];var c=DB.costs[t.area_id]||{budget:Array(12).fill(0),real:Array(12).fill(null)};ups.push({area_id:t.area_id,month:t.month,budget:c.budget[t.month]||0,real:(c.real[t.month]==null?null:c.real[t.month])});});
-  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;buildNav();render();
+  try{if(ups.length)await rest('mantos_costs','POST',ups,'resolution=merge-duplicates');IMPORT=null;
+    var ultMes=-1;Object.keys(touched).forEach(function(k){if(touched[k].month>ultMes)ultMes=touched[k].month;});
+    if(ultMes>=0){CIERRE_MES=ultMes;CIERRE_MANUAL=false;}
+    buildNav();render();
     toast(tl+' cargado: '+matched+' equipos/áreas · '+ups.length+' celdas'+(guardadas?' · '+guardadas+' mes(es) guardados en el historial':'')+(noMatch.length?(' · '+noMatch.length+' omitidos (Ceco no existe)'):'')+(createdN?' · '+createdN+' nuevos':''));
     if(noMatch.length)setTimeout(function(){alert('⚠️ '+noMatch.length+' fila(s) no coincidieron con ningún Ceco/equipo del organigrama y se OMITIERON (no se crearon cabezas nuevas):\n\n'+noMatch.slice(0,25).join('\n')+'\n\nRevisa que el Ceco de esas filas exista en el árbol.');},350);
   }catch(e){toast('Error: '+e.message);}}
