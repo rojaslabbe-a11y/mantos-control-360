@@ -357,7 +357,7 @@ const MODICON={dashboard:'dashboard',cierre:'doc',areasrep:'planta',equipmina:'m
 const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MES_ACTUAL=5, ANIO=2026;
-const APP_VERSION='2026-08-18c · historial-mensual + aviso-preciso + carga-incremental';
+const APP_VERSION='2026-08-18d · PPT formato corporativo + historial mensual';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -566,90 +566,217 @@ function loadScript(src){return new Promise(function(res,rej){var s=document.cre
 function ensurePptx(){if(window.PptxGenJS)return Promise.resolve();return loadScript('./pptxgen.bundle.js').catch(function(){return loadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');}).catch(function(){return loadScript('https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');}).then(function(){if(!window.PptxGenJS)throw new Error('PptxGenJS no disponible');});}
 function exportCierrePPT(){toast('Preparando exportación…');ensurePptx().then(buildCierrePPT).catch(function(e){toast('No se pudo cargar el exportador (revisa la conexión a internet): '+e.message);});}
 function buildCierrePPT(){
-  var f=curFaena();var m=Math.min(11,Math.max(0,CIERRE_MES));var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||'';
-  var mFull=(MES_FULL[m]||MESES[m]);var mCap=mFull.charAt(0).toUpperCase()+mFull.slice(1);
+  var f=curFaena(),m=Math.min(11,Math.max(0,CIERRE_MES));
+  var fn=(DB.faenas.find(function(x){return x.id===f;})||{}).name||'';
+  var mFull=(MES_FULL[m]||MESES[m]),mCap=mFull.charAt(0).toUpperCase()+mFull.slice(1);
   var tot=monthTot(f,null,m),ytd=ytdTot(f,null,m),mina=monthTot(f,'mina',m),planta=monthTot(f,'planta',m);
-  var ejec=tot.b?Math.round(tot.r/tot.b*100):0;var devM=tot.b?(tot.r-tot.b)/tot.b:0;var devY=ytd.b?(ytd.r-ytd.b)/ytd.b:0;
-  var areas=leafAreasOf(f).map(function(a){var c=C(a.id);return {n:a.name,r:c.real[m]||0,b:c.budget[m]||0};}).filter(function(x){return x.r||x.b;}).sort(function(x,y){return y.r-x.r;}).slice(0,10);
-  var sb=[],sr=[],labs=[];for(var k=0;k<=m;k++){var t=monthTot(f,null,k);sb.push(Math.round((sb.length?sb[sb.length-1]:0)+t.b));sr.push(Math.round((sr.length?sr[sr.length-1]:0)+t.r));labs.push(MESES[k]);}
-  var mUSD=function(v){return 'US$'+((v||0)/1000).toFixed(1)+'M';};
-  var P=new PptxGenJS();P.layout='LAYOUT_WIDE';P.author='Mantos Control 360';
-  var NAVY='08192B',CARD='123354',CARD2='1A3F5F',COP='D05F27',COPL='F6AD55',TEAL='00A896',RED='E53E3E',TXT='CBD5E1',MUT='94A3B8',WT='FFFFFF';
-  var footer=function(s){s.addText('CAPSTONE COPPER   ·   MANTOS BLANCOS   ·   GERENCIA MANTENCIÓN   ·   '+ANIO,{x:0.5,y:7.05,w:9.5,h:0.3,color:MUT,fontSize:8});s.addText('CONFIDENCIAL',{x:10.3,y:7.05,w:2.5,h:0.3,color:COP,fontSize:8,bold:true,align:'right'});};
-  // 1 · Portada (diseño Capstone — dos paneles)
-  var s1=P.addSlide();s1.addShape('rect',{x:0,y:0,w:13.34,h:7.5,fill:{color:NAVY},line:{type:'none'}});
-  s1.addShape('rect',{x:0,y:0,w:0.22,h:7.5,fill:{color:COP}});
-  s1.addShape('rect',{x:0.22,y:0,w:5.7,h:7.5,fill:{color:'0E2C4A'}});
-  s1.addShape('ellipse',{x:11.0,y:0.7,w:6.0,h:6.0,fill:{type:'none'},line:{color:COP,width:1.25}});
-  s1.addShape('ellipse',{x:0.15,y:5.4,w:3.3,h:3.3,fill:{type:'none'},line:{color:TEAL,width:2.5}});
-  for(var ci=0;ci<4;ci++){s1.addShape('ellipse',{x:9.55+ci*0.78,y:0.45,w:0.62,h:0.62,fill:{color:COP},line:{color:'F2A059',width:1}});}
-  s1.addText('CAPSTONE COPPER   ·   MANTOS BLANCOS',{x:0.6,y:0.55,w:5.1,h:0.4,color:COP,fontSize:11,bold:true,charSpacing:2});
-  s1.addText('CIERRE MES',{x:0.55,y:1.55,w:5.25,h:0.8,color:WT,fontSize:38,bold:true});
-  s1.addText(mFull.toUpperCase(),{x:0.55,y:2.35,w:5.3,h:1.0,color:COP,fontSize:56,bold:true});
-  s1.addText('Gerencia de Mantenimiento — '+fn,{x:0.6,y:3.7,w:5.1,h:0.5,color:TEAL,fontSize:15});
-  s1.addText('MANTOS BLANCOS   '+ANIO,{x:0.6,y:4.3,w:5.1,h:0.4,color:MUT,fontSize:12,charSpacing:2});
-  s1.addText('CONTROL',{x:6.5,y:1.95,w:6.6,h:0.95,color:WT,fontSize:50,bold:true});
-  s1.addText('REDUCCIÓN',{x:6.5,y:2.85,w:6.6,h:0.95,color:COP,fontSize:50,bold:true});
-  s1.addText('RESULTADOS',{x:6.5,y:3.75,w:6.6,h:0.95,color:TEAL,fontSize:50,bold:true});
-  footer(s1);
-  // 2 · Dashboard ejecutivo
-  var s2=P.addSlide();s2.addShape('rect',{x:0,y:0,w:13.34,h:7.5,fill:{color:NAVY},line:{type:'none'}});
-  s2.addText('DASHBOARD EJECUTIVO  ·  PANEL DE CONTROL DE COSTOS',{x:0.5,y:0.3,w:12.3,h:0.5,color:WT,fontSize:20,bold:true});
-  s2.addText('Real vs Budget · Ejecución OPEX · Desviación  ·  '+mCap+' '+ANIO+'  ·  '+fn,{x:0.5,y:0.85,w:12.3,h:0.3,color:MUT,fontSize:11});
-  var tile=function(x,val,lbl,acc){s2.addShape('roundRect',{x:x,y:1.4,w:2.95,h:1.4,fill:{color:CARD},line:{color:CARD2,width:1},rectRadius:0.1});s2.addText(val,{x:x,y:1.6,w:2.95,h:0.6,color:acc,fontSize:22,bold:true,align:'center'});s2.addText(lbl,{x:x+0.12,y:2.25,w:2.71,h:0.5,color:MUT,fontSize:9,align:'center'});};
-  tile(0.5,mUSD(tot.r)+' / '+mUSD(tot.b),'GASTO REAL  vs  BUDGET',COP);
-  tile(3.62,ejec+'%','EJECUCIÓN OPEX / budget mensual',ejec>100?RED:TEAL);
-  tile(6.74,(devM>0?'+':'')+(devM*100).toFixed(1)+'%','DESVIACIÓN Real vs Budget',devM>0?RED:TEAL);
-  tile(9.86,mUSD(ytd.r),'REAL ACUMULADO YTD',COPL);
-  s2.addText('REAL vs BUDGET  ·  POR ÁREA',{x:0.5,y:3.05,w:12.3,h:0.35,color:COP,fontSize:13,bold:true});
-  (function(){var top=areas.slice(0,7);var maxv=Math.max.apply(null,[1].concat(top.map(function(a){return Math.max(a.b||0,a.r||0);})));var y0=3.55,rh=0.46,bx=3.9,bw=6.3;
-    s2.addShape('rect',{x:bx,y:3.2,w:0.17,h:0.17,fill:{color:'5B86B0'}});s2.addText('Budget',{x:bx+0.24,y:3.13,w:1.1,h:0.3,color:MUT,fontSize:9});
-    s2.addShape('rect',{x:bx+1.4,y:3.2,w:0.17,h:0.17,fill:{color:COP}});s2.addText('Real',{x:bx+1.64,y:3.13,w:1.1,h:0.3,color:MUT,fontSize:9});
-    top.forEach(function(a,i){var yy=y0+i*rh;
-      s2.addText(a.n,{x:0.5,y:yy,w:3.3,h:rh,color:TXT,fontSize:10,valign:'middle'});
-      s2.addShape('rect',{x:bx,y:yy+0.08,w:Math.max(0.03,(Math.max(0,a.b)/maxv)*bw),h:0.15,fill:{color:'5B86B0'}});
-      s2.addShape('rect',{x:bx,y:yy+0.25,w:Math.max(0.03,(Math.max(0,a.r)/maxv)*bw),h:0.15,fill:{color:COP}});
-      s2.addText(mUSD(a.r),{x:bx+bw+0.15,y:yy,w:1.6,h:rh,color:TXT,fontSize:9,valign:'middle'});});
-  })();
-  footer(s2);
-  // 3 · Acumulado YTD
-  var s3=P.addSlide();s3.addShape('rect',{x:0,y:0,w:13.34,h:7.5,fill:{color:NAVY},line:{type:'none'}});
-  s3.addText('REAL vs BUDGET  ·  ACUMULADO YTD',{x:0.5,y:0.3,w:12.3,h:0.5,color:WT,fontSize:20,bold:true});
-  s3.addText('Trayectoria del gasto acumulado (US$K)  ·  '+fn,{x:0.5,y:0.85,w:12.3,h:0.3,color:MUT,fontSize:11});
-  (function(){var maxc=Math.max.apply(null,[1].concat(sb,sr));var n=labs.length,aw=11.8,x0=0.8,base=6.2,ch=4.3,slot=aw/n;
-    s3.addShape('rect',{x:x0,y:1.45,w:0.17,h:0.17,fill:{color:'5B86B0'}});s3.addText('Budget acum.',{x:x0+0.24,y:1.38,w:2,h:0.3,color:MUT,fontSize:10});
-    s3.addShape('rect',{x:x0+2.2,y:1.45,w:0.17,h:0.17,fill:{color:COP}});s3.addText('Real acum.',{x:x0+2.44,y:1.38,w:2,h:0.3,color:MUT,fontSize:10});
-    labs.forEach(function(l,i){var cx=x0+i*slot;var bh=(sb[i]/maxc)*ch,rh=(sr[i]/maxc)*ch;
-      s3.addShape('rect',{x:cx+slot*0.16,y:base-bh,w:slot*0.3,h:Math.max(0.02,bh),fill:{color:'5B86B0'}});
-      s3.addShape('rect',{x:cx+slot*0.52,y:base-rh,w:slot*0.3,h:Math.max(0.02,rh),fill:{color:COP}});
-      s3.addText(l,{x:cx,y:base+0.05,w:slot,h:0.3,color:MUT,fontSize:9,align:'center'});});
-  })();
-  footer(s3);
-  // 4 · Hallazgos
-  var s4=P.addSlide();s4.addShape('rect',{x:0,y:0,w:13.34,h:7.5,fill:{color:NAVY},line:{type:'none'}});
-  s4.addText('HALLAZGOS CLAVE  ·  '+mFull.toUpperCase()+' '+ANIO,{x:0.5,y:0.3,w:12.3,h:0.5,color:WT,fontSize:20,bold:true});
-  var over=areas.filter(function(a){return a.b&&(a.r-a.b)/a.b>0.05;}).slice(0,3);
-  var hall=[];hall.push('Ejecución del mes: '+ejec+'% del budget ('+mUSD(tot.r)+' de '+mUSD(tot.b)+').');
-  hall.push('Desviación acumulada YTD: '+(devY>0?'+':'')+(devY*100).toFixed(1)+'% ('+mUSD(ytd.r)+' real vs '+mUSD(ytd.b)+' budget).');
-  if(over.length)hall.push('Áreas sobre presupuesto: '+over.map(function(o){return o.n+' (+'+(((o.r-o.b)/o.b)*100).toFixed(0)+'%)';}).join(', ')+'.');
-  hall.push('Gasto del mes — Mina '+mUSD(mina.r)+'  ·  Planta '+mUSD(planta.r)+'.');
-  s4.addText(hall.map(function(h){return {text:h,options:{bullet:{code:'2022',indent:18},color:TXT,fontSize:15,paraSpaceAfter:16}};}),{x:0.85,y:1.7,w:11.6,h:4.5});
-  footer(s4);
-  // 5 · Cierre
-  var s5=P.addSlide();s5.addShape('rect',{x:0,y:0,w:13.34,h:7.5,fill:{color:NAVY},line:{type:'none'}});s5.addShape('rect',{x:0,y:3.45,w:13.33,h:0.04,fill:{color:COP}});
-  s5.addText('CAPSTONE COPPER   ·   MANTOS BLANCOS',{x:0,y:2.6,w:13.33,h:0.5,color:WT,fontSize:24,bold:true,align:'center'});
-  s5.addText('Gerencia Mantenimiento',{x:0,y:3.65,w:13.33,h:0.4,color:MUT,fontSize:14,align:'center'});
-  s5.addText('CONTROL.      REDUCCIÓN.      RESULTADOS.',{x:0,y:4.3,w:13.33,h:0.5,color:COP,fontSize:18,bold:true,align:'center',charSpacing:2});
-  s5.addText('CAPSTONE COPPER CORP.   ·   TSX:CS   ·   CONFIDENCIAL   ·   '+ANIO,{x:0,y:6.9,w:13.33,h:0.3,color:MUT,fontSize:9,align:'center'});
+  var ejec=tot.b?Math.round(tot.r/tot.b*100):0,devM=tot.b?(tot.r-tot.b)/tot.b:0,devY=ytd.b?(ytd.r-ytd.b)/ytd.b:0;
+  var areas=leafAreasOf(f).map(function(a){var c=C(a.id);return {n:a.name,r:c.real[m]||0,b:c.budget[m]||0};})
+             .filter(function(x){return x.r||x.b;}).sort(function(x,y){return y.r-x.r;});
+  var sb=[],sr=[],labs=[];for(var k=0;k<=m;k++){var t=monthTot(f,null,k);
+    sb.push(Math.round((sb.length?sb[sb.length-1]:0)+t.b));sr.push(Math.round((sr.length?sr[sr.length-1]:0)+t.r));labs.push(MESES[k]);}
+
+  /* ===== Sistema de diseño ===== */
+  var FONT='Calibri',W=10;
+  var NAVY='15293B',COP='E27B2E',INK='374151',MUT='6B7280',FAINT='9CA3AF',
+      LINE='E5E7EB',SOFT='F8FAFC',WT='FFFFFF',OK='16A34A',BAD='C2410C';
+  var money=function(v){v=v||0;var a=Math.abs(v);
+    return (v<0?'-':'')+'US$'+(a>=1000?(a/1000).toFixed(1)+'M':Math.round(a).toLocaleString('es-CL')+'K');};
+  var pct=function(v){return (v>0?'+':'')+(v*100).toFixed(1)+'%';};
+  var AMB='B45309';
+  var sem=function(d){return d>0.05?BAD:(d>0.005?AMB:OK);};
+
+  var P=new PptxGenJS();P.layout='LAYOUT_16x9';P.author='Mantos Control 360';
+  P.title='Cierre de Mes — '+mCap+' '+ANIO;
+
+  function head(s,lab,tit){
+    s.addShape('rect',{x:0,y:0,w:W,h:0.05,fill:{color:NAVY},line:{type:'none'}});
+    s.addText(lab,{x:0.5,y:0.16,w:9,h:0.2,color:FAINT,fontSize:8,bold:true,charSpacing:1.2,fontFace:FONT});
+    s.addText(tit,{x:0.5,y:0.36,w:9,h:0.52,color:NAVY,fontSize:22,bold:true,fontFace:FONT});
+    s.addShape('rect',{x:0.5,y:0.97,w:9,h:0.014,fill:{color:LINE},line:{type:'none'}});
+    s.addShape('rect',{x:0.5,y:0.97,w:0.9,h:0.014,fill:{color:COP},line:{type:'none'}});}
+  function foot(s){
+    s.addShape('rect',{x:0,y:5.42,w:W,h:0.205,fill:{color:SOFT},line:{type:'none'}});
+    s.addText('CAPSTONE COPPER  ·  '+fn.toUpperCase(),{x:0.5,y:5.44,w:5,h:0.17,color:FAINT,fontSize:7,fontFace:FONT});
+    s.addText('Cierre de Mes — '+mCap+' '+ANIO,{x:4.6,y:5.44,w:4.9,h:0.17,color:FAINT,fontSize:7,align:'right',fontFace:FONT});}
+  function kpi(s,x,y,w,val,lbl,acc){
+    s.addShape('rect',{x:x,y:y,w:w,h:0.95,fill:{color:WT},line:{color:LINE,width:0.75}});
+    s.addShape('rect',{x:x,y:y,w:0.055,h:0.95,fill:{color:acc||COP},line:{type:'none'}});
+    s.addText(val,{x:x+0.17,y:y+0.08,w:w-0.3,h:0.45,color:NAVY,fontSize:15,bold:true,fontFace:FONT,valign:'middle'});
+    s.addText(lbl,{x:x+0.17,y:y+0.53,w:w-0.3,h:0.35,color:MUT,fontSize:8,fontFace:FONT});}
+  function tbl(s,x,y,w,rows){
+    var cw=[w*0.40,w*0.19,w*0.19,w*0.22],rh=0.30;
+    s.addShape('rect',{x:x,y:y,w:w,h:rh,fill:{color:NAVY},line:{type:'none'}});
+    ['Área / Equipo','Budget','Real','Desv.'].forEach(function(h,i){
+      var xx=x;for(var q=0;q<i;q++)xx+=cw[q];
+      s.addText(h,{x:xx+0.08,y:y,w:cw[i]-0.16,h:rh,color:WT,fontSize:8,bold:true,fontFace:FONT,
+        valign:'middle',align:i?'right':'left'});});
+    rows.forEach(function(r,i){var yy=y+rh+i*rh;
+      if(i%2)s.addShape('rect',{x:x,y:yy,w:w,h:rh,fill:{color:SOFT},line:{type:'none'}});
+      s.addShape('rect',{x:x,y:yy+rh-0.008,w:w,h:0.008,fill:{color:LINE},line:{type:'none'}});
+      var d=r.b?(r.r-r.b)/r.b:0,dc=(!r.b)?MUT:(d>0.05?BAD:(d<-0.05?OK:MUT));
+      var cells=[{t:r.n,c:INK,b:!!r.head},{t:money(r.b),c:MUT},{t:money(r.r),c:NAVY,b:true},{t:r.b?pct(d):'—',c:dc,b:true}];
+      cells.forEach(function(cl,j){var xx=x;for(var q=0;q<j;q++)xx+=cw[q];
+        s.addText(cl.t,{x:xx+0.08,y:yy,w:cw[j]-0.16,h:rh,color:cl.c,fontSize:8.5,bold:!!cl.b,
+          fontFace:FONT,valign:'middle',align:j?'right':'left'});});});}
+
+  /* ===== 1 · Portada ===== */
+  var s1=P.addSlide();
+  s1.addShape('rect',{x:0,y:0,w:W,h:5.625,fill:{color:WT},line:{type:'none'}});
+  s1.addShape('rect',{x:0,y:0,w:0.14,h:5.625,fill:{color:COP},line:{type:'none'}});
+  s1.addShape('rect',{x:0.14,y:0,w:6.15,h:5.625,fill:{color:NAVY},line:{type:'none'}});
+  s1.addShape('rect',{x:6.29,y:0,w:0.02,h:5.625,fill:{color:COP},line:{type:'none'}});
+  s1.addShape('rect',{x:8.55,y:4.62,w:1.45,h:0.06,fill:{color:COP},line:{type:'none'}});
+  s1.addText('CAPSTONE COPPER  ·  '+fn.toUpperCase()+'  ·  CHILE',
+    {x:6.55,y:0.42,w:3.2,h:0.22,color:MUT,fontSize:7.5,bold:true,charSpacing:1,fontFace:FONT,align:'right'});
+  s1.addText('CONTROL DE COSTOS',{x:6.55,y:0.68,w:3.2,h:0.3,color:NAVY,fontSize:13,bold:true,fontFace:FONT,align:'right'});
+  s1.addShape('rect',{x:0.62,y:2.25,w:2.5,h:0.014,fill:{color:COP},line:{type:'none'}});
+  s1.addText('Cierre de Mes',{x:0.62,y:2.38,w:5.4,h:0.6,color:WT,fontSize:30,bold:true,fontFace:FONT});
+  s1.addText(mCap+' '+ANIO+'.',{x:0.62,y:2.97,w:5.4,h:0.6,color:COP,fontSize:30,bold:true,fontFace:FONT});
+  s1.addText('Gestión de costos Real vs Budget · Mina y Planta.',
+    {x:0.62,y:3.72,w:4.6,h:0.5,color:'CBD5E1',fontSize:10,fontFace:FONT});
+  s1.addShape('rect',{x:0.62,y:4.34,w:0.62,h:0.07,fill:{color:COP},line:{type:'none'}});
+  s1.addText('Presentado por: Ingeniería de Costos',{x:0.62,y:5.05,w:4,h:0.2,color:'94A3B8',fontSize:7.5,fontFace:FONT});
+  s1.addText('Mantos Control 360',{x:6.55,y:5.02,w:3.2,h:0.25,color:MUT,fontSize:8,fontFace:FONT,align:'right'});
+
+  /* ===== 2 · Índice ===== */
+  var s2=P.addSlide();head(s2,'CONTENIDO DE LA SESIÓN','Índice');
+  var nMi=Math.max(1,Math.ceil(filasArbol('mina').length/12)),nPl=Math.max(1,Math.ceil(filasArbol('planta').length/12));
+  var lam=function(a,b){return b>1?'Láminas '+a+'-'+(a+b-1):'Lámina '+a;};
+  var pMi=6,pPl=pMi+nMi,pDes=pPl+nPl;
+  var idx=[['01','Resumen del mes','Lámina 3'],['02','Real vs Budget por área','Lámina 4'],
+           ['03','Acumulado del año','Lámina 5'],['04','Mina por categoría',lam(pMi,nMi)],
+           ['05','Planta por familia',lam(pPl,nPl)],['06','Mayores desviaciones','Lámina '+pDes]];
+  idx.forEach(function(it,i){var col=i%3,row=Math.floor(i/3);
+    var x=0.5+col*3.06,y=1.35+row*1.75;
+    s2.addShape('rect',{x:x,y:y,w:2.88,h:1.55,fill:{color:WT},line:{color:LINE,width:0.75}});
+    s2.addShape('rect',{x:x,y:y,w:2.88,h:0.05,fill:{color:COP},line:{type:'none'}});
+    s2.addText(it[0],{x:x+0.18,y:y+0.2,w:0.8,h:0.34,color:COP,fontSize:16,bold:true,fontFace:FONT});
+    s2.addText(it[1],{x:x+0.18,y:y+0.62,w:2.5,h:0.5,color:NAVY,fontSize:11,bold:true,fontFace:FONT});
+    s2.addText(it[2],{x:x+0.18,y:y+1.14,w:2.5,h:0.22,color:FAINT,fontSize:8,fontFace:FONT});});
+  foot(s2);
+
+  /* ===== 3 · Resumen del mes ===== */
+  var s3=P.addSlide();head(s3,'CONTROL DE COSTOS  |  '+mCap.toUpperCase()+' '+ANIO,'Resumen del mes');
+  kpi(s3,0.5,1.14,2.28,money(tot.r),'Gasto real del mes',COP);
+  kpi(s3,2.90,1.14,2.28,money(tot.b),'Budget del mes',NAVY);
+  kpi(s3,5.31,1.14,2.28,ejec+'%','Ejecución sobre budget',sem((ejec-100)/100));
+  kpi(s3,7.72,1.14,2.28,pct(devM),'Desviación del mes',sem(devM));
+  s3.addText('Acumulado del año a '+mCap,{x:0.5,y:2.36,w:4.5,h:0.26,color:NAVY,fontSize:11,bold:true,fontFace:FONT});
+  s3.addShape('rect',{x:0.5,y:2.66,w:4.5,h:2.5,fill:{color:WT},line:{color:LINE,width:0.75}});
+  var ac=[['Real acumulado',money(ytd.r)],['Budget acumulado',money(ytd.b)],
+          ['Desviación acumulada',pct(devY)],['Gasto Mina del mes',money(mina.r)],['Gasto Planta del mes',money(planta.r)]];
+  ac.forEach(function(rw,i){var yy=2.78+i*0.47;
+    s3.addText(rw[0],{x:0.68,y:yy,w:2.7,h:0.34,color:MUT,fontSize:9,fontFace:FONT,valign:'middle'});
+    s3.addText(rw[1],{x:3.3,y:yy,w:1.55,h:0.34,color:NAVY,fontSize:10,bold:true,fontFace:FONT,valign:'middle',align:'right'});
+    if(i<4)s3.addShape('rect',{x:0.68,y:yy+0.38,w:4.14,h:0.008,fill:{color:LINE},line:{type:'none'}});});
+  s3.addText('Mayor gasto del mes',{x:5.31,y:2.36,w:4.69,h:0.26,color:NAVY,fontSize:11,bold:true,fontFace:FONT});
+  (function(){var top=areas.slice(0,6),mx=Math.max.apply(null,[1].concat(top.map(function(a){return Math.max(a.b,a.r);})));
+    top.forEach(function(a,i){var yy=2.72+i*0.42;
+      s3.addText(a.n.length>26?a.n.slice(0,25)+'…':a.n,{x:5.31,y:yy,w:2.3,h:0.34,color:INK,fontSize:8,fontFace:FONT,valign:'middle'});
+      s3.addShape('rect',{x:7.65,y:yy+0.12,w:Math.max(0.02,(a.r/mx)*1.55),h:0.11,fill:{color:COP},line:{type:'none'}});
+      s3.addText(money(a.r),{x:9.25,y:yy,w:0.75,h:0.34,color:NAVY,fontSize:8,bold:true,fontFace:FONT,valign:'middle',align:'right'});});})();
+  foot(s3);
+
+  /* ===== 4 · Real vs Budget por área ===== */
+  var s4=P.addSlide();head(s4,'DETALLE POR ÁREA  |  '+mCap.toUpperCase()+' '+ANIO,'Real vs Budget por área');
+  (function(){var top=areas.slice(0,11),mx=Math.max.apply(null,[1].concat(top.map(function(a){return Math.max(a.b,a.r);})));
+    s4.addShape('rect',{x:3.6,y:1.15,w:0.14,h:0.11,fill:{color:'5B86B0'},line:{type:'none'}});
+    s4.addText('Budget',{x:3.8,y:1.08,w:0.8,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});
+    s4.addShape('rect',{x:4.7,y:1.15,w:0.14,h:0.11,fill:{color:COP},line:{type:'none'}});
+    s4.addText('Real',{x:4.9,y:1.08,w:0.8,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});
+    if(!top.length)s4.addText('Sin cifras cargadas para este mes.',{x:0.5,y:2.4,w:9,h:0.4,color:MUT,fontSize:11,fontFace:FONT,align:'center'});
+    top.forEach(function(a,i){var yy=1.42+i*0.36,bw=4.3;
+      s4.addText(a.n.length>34?a.n.slice(0,33)+'…':a.n,{x:0.5,y:yy,w:3.0,h:0.32,color:INK,fontSize:8.5,fontFace:FONT,valign:'middle'});
+      s4.addShape('rect',{x:3.6,y:yy+0.05,w:Math.max(0.02,(a.b/mx)*bw),h:0.10,fill:{color:'5B86B0'},line:{type:'none'}});
+      s4.addShape('rect',{x:3.6,y:yy+0.18,w:Math.max(0.02,(a.r/mx)*bw),h:0.10,fill:{color:COP},line:{type:'none'}});
+      var d=a.b?(a.r-a.b)/a.b:0;
+      s4.addText(money(a.r),{x:8.05,y:yy,w:1.05,h:0.32,color:NAVY,fontSize:8,bold:true,fontFace:FONT,valign:'middle',align:'right'});
+      s4.addText(a.b?pct(d):'—',{x:9.1,y:yy,w:0.9,h:0.32,color:(!a.b)?MUT:sem(d),fontSize:8,bold:true,fontFace:FONT,valign:'middle',align:'right'});});
+    if(areas.length>top.length)s4.addText('Mostrando las '+top.length+' áreas de mayor gasto de '+areas.length+' con movimiento en el mes. El detalle completo está en las láminas de Mina y Planta.',
+      {x:0.5,y:5.16,w:9,h:0.22,color:FAINT,fontSize:7,fontFace:FONT});})();
+  foot(s4);
+
+  /* ===== 5 · Acumulado del año ===== */
+  var s5=P.addSlide();head(s5,'TRAYECTORIA '+ANIO,'Acumulado del año');
+  (function(){var mx=Math.max.apply(null,[1].concat(sb,sr)),n=labs.length||1;
+    var x0=1.05,aw=8.5,base=4.75,ch=3.2,slot=aw/n;
+    s5.addShape('rect',{x:x0,y:base,w:aw,h:0.012,fill:{color:LINE},line:{type:'none'}});
+    [0.25,0.5,0.75,1].forEach(function(g){var yy=base-ch*g;
+      s5.addShape('rect',{x:x0,y:yy,w:aw,h:0.006,fill:{color:'F1F5F9'},line:{type:'none'}});
+      s5.addText(money(mx*g),{x:0.1,y:yy-0.11,w:0.85,h:0.22,color:FAINT,fontSize:7,fontFace:FONT,align:'right',valign:'middle'});});
+    labs.forEach(function(L,i){var cx=x0+i*slot,bwd=Math.min(0.30,slot*0.32);
+      var hb=(sb[i]/mx)*ch,hr=(sr[i]/mx)*ch;
+      s5.addShape('rect',{x:cx+slot/2-bwd-0.03,y:base-hb,w:bwd,h:Math.max(0.01,hb),fill:{color:'5B86B0'},line:{type:'none'}});
+      s5.addShape('rect',{x:cx+slot/2+0.03,y:base-hr,w:bwd,h:Math.max(0.01,hr),fill:{color:COP},line:{type:'none'}});
+      s5.addText(L,{x:cx,y:base+0.06,w:slot,h:0.22,color:MUT,fontSize:7.5,fontFace:FONT,align:'center'});});
+    s5.addShape('rect',{x:x0,y:1.2,w:0.14,h:0.11,fill:{color:'5B86B0'},line:{type:'none'}});
+    s5.addText('Budget acumulado',{x:x0+0.2,y:1.13,w:1.7,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});
+    s5.addShape('rect',{x:x0+2.0,y:1.2,w:0.14,h:0.11,fill:{color:COP},line:{type:'none'}});
+    s5.addText('Real acumulado',{x:x0+2.2,y:1.13,w:1.7,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});
+    s5.addText('Al cierre de '+mCap+': real '+money(ytd.r)+' contra budget '+money(ytd.b)+'  ·  desviación '+pct(devY),
+      {x:x0+4.2,y:1.11,w:4.7,h:0.28,color:NAVY,fontSize:8.5,bold:true,fontFace:FONT,align:'right'});})();
+  foot(s5);
+
+  /* ===== 6 y 7 · Mina y Planta (paginadas, sin recortes silenciosos) ===== */
+  function filasArbol(tipo){var rows=[];
+    rootsOf(f,tipo).forEach(function(r){var mm=nodeMon(r.id);
+      rows.push({n:r.name,b:mm.b[m]||0,r:mm.r[m]||0,head:true});
+      DB.areas.filter(function(x){return x.parent===r.id;})
+        .sort(function(a,b){return (a.orden||0)-(b.orden||0);})
+        .forEach(function(ch){var cm=nodeMon(ch.id);
+          rows.push({n:'    '+ch.name,b:cm.b[m]||0,r:cm.r[m]||0});});});
+    return rows;}
+  var FILAS=12;
+  function paginas(rows){var out=[];for(var i=0;i<rows.length;i+=FILAS)out.push(rows.slice(i,i+FILAS));return out.length?out:[[]];}
+  var rMina=filasArbol('mina'),rPlanta=filasArbol('planta');
+  var pgMina=paginas(rMina),pgPlanta=paginas(rPlanta);
+  function arbol(tl,lab,pgs,total){
+    pgs.forEach(function(rows,i){var s=P.addSlide();
+      head(s,lab,tl+(pgs.length>1?' ('+(i+1)+' de '+pgs.length+')':''));
+      if(!rows.length)s.addText('Sin estructura cargada.',{x:0.5,y:2.4,w:9,h:0.4,color:MUT,fontSize:11,fontFace:FONT,align:'center'});
+      else{tbl(s,0.5,1.18,9,rows);
+        s.addText('Mostrando '+rows.length+' de '+total+' líneas · los totales de cada categoría suman sus equipos.',
+          {x:0.5,y:5.16,w:9,h:0.22,color:FAINT,fontSize:7,fontFace:FONT});}
+      foot(s);});}
+  arbol('Mina por categoría','ESTRUCTURA DE COSTOS  |  MINA · '+mCap.toUpperCase(),pgMina,rMina.length);
+  arbol('Planta por familia','ESTRUCTURA DE COSTOS  |  PLANTA · '+mCap.toUpperCase(),pgPlanta,rPlanta.length);
+
+  /* ===== 8 · Mayores desviaciones ===== */
+  var s8=P.addSlide();head(s8,'ANÁLISIS  |  '+mCap.toUpperCase()+' '+ANIO,'Mayores desviaciones');
+  var over=areas.filter(function(a){return a.b&&(a.r-a.b)/a.b>0.05;})
+                .sort(function(x,y){return (y.r-y.b)-(x.r-x.b);}).slice(0,5);
+  var under=areas.filter(function(a){return a.b&&(a.r-a.b)/a.b<-0.05;})
+                 .sort(function(x,y){return (x.r-x.b)-(y.r-y.b);}).slice(0,5);
+  function panel(x,tit,list,acc,vacio){
+    s8.addShape('rect',{x:x,y:1.18,w:4.5,h:2.6,fill:{color:WT},line:{color:LINE,width:0.75}});
+    s8.addShape('rect',{x:x,y:1.18,w:4.5,h:0.05,fill:{color:acc},line:{type:'none'}});
+    s8.addText(tit,{x:x+0.2,y:1.32,w:4.1,h:0.28,color:NAVY,fontSize:11,bold:true,fontFace:FONT});
+    if(!list.length){s8.addText(vacio,{x:x+0.2,y:1.75,w:4.1,h:0.4,color:MUT,fontSize:9,fontFace:FONT});return;}
+    list.forEach(function(a,i){var yy=1.72+i*0.4;
+      s8.addText(a.n.length>30?a.n.slice(0,29)+'…':a.n,{x:x+0.2,y:yy,w:2.6,h:0.34,color:INK,fontSize:8.5,fontFace:FONT,valign:'middle'});
+      s8.addText(money(a.r-a.b),{x:x+2.8,y:yy,w:0.85,h:0.34,color:MUT,fontSize:8,fontFace:FONT,valign:'middle',align:'right'});
+      s8.addText(pct((a.r-a.b)/a.b),{x:x+3.65,y:yy,w:0.65,h:0.34,color:acc,fontSize:8.5,bold:true,fontFace:FONT,valign:'middle',align:'right'});});}
+  panel(0.5,'Sobre presupuesto',over,BAD,'Ninguna área supera el budget en más de 5%.');
+  panel(5.0,'Bajo presupuesto',under,OK,'Ninguna área queda bajo el budget en más de 5%.');
+  s8.addShape('rect',{x:0.5,y:3.95,w:9,h:1.15,fill:{color:SOFT},line:{color:LINE,width:0.75}});
+  s8.addShape('rect',{x:0.5,y:3.95,w:0.055,h:1.15,fill:{color:COP},line:{type:'none'}});
+  s8.addText('Lectura del cierre',{x:0.72,y:4.05,w:8.6,h:0.24,color:NAVY,fontSize:10,bold:true,fontFace:FONT});
+  var lect='El mes cerró en '+money(tot.r)+' contra un budget de '+money(tot.b)+' ('+ejec+'% de ejecución, '+pct(devM)+'). '+
+    'En el año, el real acumulado llega a '+money(ytd.r)+' frente a '+money(ytd.b)+' presupuestados ('+pct(devY)+'). '+
+    'Del gasto del mes, Mina aporta '+money(mina.r)+' y Planta '+money(planta.r)+'.'+
+    (over.length?' Las áreas sobre presupuesto suman '+money(over.reduce(function(t,o){return t+(o.r-o.b);},0))+' por sobre lo planificado.':'');
+  s8.addText(lect,{x:0.72,y:4.3,w:8.6,h:0.7,color:INK,fontSize:9,fontFace:FONT,lineSpacingMultiple:1.25});
+  foot(s8);
+
   toast('Generando PPT…');
-  var fname='Cierre_'+fn.replace(/[^a-z0-9]+/gi,'_')+'_'+MESES[m]+'_'+ANIO+'.pptx';
+  var fname='Cierre_'+fn.replace(/[^a-z0-9]+/gi,'_')+'_'+mCap+'_'+ANIO+'.pptx';
   P.write({outputType:'base64'}).then(function(b64){
     var bin=atob(b64),len=bin.length,arr=new Uint8Array(len);for(var i=0;i<len;i++)arr[i]=bin.charCodeAt(i);
     var blob=new Blob([arr],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
     offerDownload(blob,fname,'presentación PPT');
   }).catch(function(e){toast('Error al exportar: '+e.message);});
 }
-/* Descarga a prueba de bloqueos: NUNCA descarga sola — solo un botón de clic directo del usuario (así Chrome corporativo no lo bloquea) */
 function offerDownload(blob,fname,label){
   var url=URL.createObjectURL(blob);
   var old=document.getElementById('dlOverlay');if(old)old.parentNode.removeChild(old);
