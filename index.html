@@ -358,7 +358,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18g · portada con foto + logo Capstone oficial';
+const APP_VERSION='2026-08-18h · portada con foto de faena + degradado suave';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -660,15 +660,8 @@ async function buildCierrePPT(){
   var s1=P.addSlide();
   if(FOTO){
     s1.addImage({data:FOTO,x:0,y:0,w:W,h:5.625,sizing:{type:'cover',w:W,h:5.625}});
-    /* degradado: PptxGenJS no hace gradientes, así que lo armo con franjas finas
-       y una curva de opacidad. Con 22 pasos la escalera deja de notarse. */
-    var NS=22,XF=7.6,wS=XF/NS;
-    for(var gi=0;gi<NS;gi++){var tg=gi/(NS-1);
-      var tr=Math.round(4+96*Math.pow(tg,1.45));
-      s1.addShape('rect',{x:gi*wS,y:0,w:wS+0.05,h:5.625,fill:{color:'0B1B2B',transparency:Math.min(99,tr)},line:{type:'none'}});}
-    /* velo general para que el texto siempre lea, y sombra inferior */
-    s1.addShape('rect',{x:0,y:0,w:W,h:5.625,fill:{color:NAVY,transparency:72},line:{type:'none'}});
-    s1.addShape('rect',{x:0,y:3.9,w:W,h:1.1,fill:{color:'0B1B2B',transparency:60},line:{type:'none'}});
+    /* El degradado navy va horneado en portada.jpg con una curva continua (smoothstep).
+       Así la unión con el azul no tiene ningún escalón: no se dibuja ninguna franja encima. */
   }else{
     s1.addShape('rect',{x:0,y:0,w:W,h:5.625,fill:{color:NAVY},line:{type:'none'}});
     s1.addShape('rect',{x:5.6,y:0,w:4.4,h:5.625,fill:{color:'0E2136'},line:{type:'none'}});
