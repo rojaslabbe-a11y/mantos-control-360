@@ -356,7 +356,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18j · Outlook + proyección al ritmo real + filtros';
+const APP_VERSION='2026-08-18k · Budget por Mina y Planta + detalle con Outlook';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -603,6 +603,8 @@ function render(){if(!SESSION)return;$('#tb_name').textContent=SESSION.name;$('#
 /* ===== Cierre de Mes (dashboard ejecutivo automático) ===== */
 let CIERRE_MES=Math.max(0,MES_ACTUAL-1),CIERRE_MANUAL=false,CIERRE_TIPO='all';
 let AREA_MES=-1; /* -1 = acumulado del año; 0..11 = un mes puntual */
+let BUD_TIPO='all';
+function setBudTipo(v){BUD_TIPO=v;render();}
 function setAreaMes(v){AREA_MES=+v;render();}
 function setCierreTipo(v){CIERRE_TIPO=v;render();}
 function setCierreMes(v){CIERRE_MES=+v;CIERRE_MANUAL=true;render();}
@@ -1024,14 +1026,52 @@ function editGrid(tipo){const f=curFaena();const ar=leafAreasOf(f,tipo);
    '<div class="addrow"><input id="qa_name" placeholder="Agregar área ('+at+')"><button class="btn sm" onclick="quickAddArea(\''+f+'\',\''+at+'\')">'+ic('plus',15)+' Área</button></div>';}
 
 function viewBudget(){const f=curFaena();const mi=faenaTotals(f,'mina'),pl=faenaTotals(f,'planta'),tot=faenaTotals(f);const s=monthly(f,null);
+  /* Los mismos cuadros del consolidado, repetidos por Mina y por Planta (pedido de Paula) */
+  function cuadros(lbl,d,ico){
+    var pctE=d.bAnual?((d.rAcum/d.bAnual)*100).toFixed(0):0;
+    return '<div class="sectit" style="margin-top:14px"><span class="lft">'+(ico?ic(ico,15)+' ':'')+lbl+'</span><span class="pill">presupuesto '+ANIO+'</span></div>'+
+      '<div class="statwrap">'+
+      '<div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(d.bAnual)+'</div></div>'+
+      '<div class="ministat"><div class="l">Ejecutado</div><div class="v">'+fmtM(d.rAcum)+'</div></div>'+
+      '<div class="ministat"><div class="l">% ejecución</div><div class="v">'+pctE+'%</div></div>'+
+      '<div class="ministat"><div class="l">Saldo</div><div class="v">'+fmtM(d.bAnual-d.rAcum)+'</div></div></div>';}
+
+  /* Detalle mensual con Outlook y las dos desviaciones contra el Real */
+  function detalle(tp){
+    var mm=monthly(f,tp);var out='';var accR=0,accB=0;
+    for(var m=0;m<12;m++){
+      var bm=mm.b[m]||0, om=mm.o[m]||0, rm=mm.r[m];
+      if(!bm&&!om&&rm==null)continue;
+      accB+=bm; if(rm!=null)accR+=rm;
+      var dB=(rm!=null&&bm)?((rm-bm)/bm):null;
+      var dO=(rm!=null&&om)?((rm-om)/om):null;
+      var dA=accB?((accR-accB)/accB):null;
+      function cel(d){return d==null?'<td>—</td>':'<td class="'+(d>0?'neg':'pos')+'">'+(d>0?'+':'')+(d*100).toFixed(0)+'%</td>';}
+      out+='<tr><td>'+MESES[m]+' '+ANIO+'</td><td>'+fmtK(bm)+'</td><td>'+(om?fmtK(om):'—')+'</td><td>'+(rm==null?'—':fmtK(rm))+'</td>'+
+        cel(dB)+cel(dO)+'<td>'+fmtK(accR)+'</td>'+cel(dA)+'</tr>';}
+    if(!out)return '<div class="empty">Sin cifras cargadas.</div>';
+    return '<div class="card nopad" style="overflow-x:auto"><table class="tbl"><thead><tr>'+
+      '<th>Mes</th><th>Budget</th><th>Outlook</th><th>Real</th><th>Real vs Budget</th><th>Real vs Outlook</th><th>Acum. Real</th><th>Desv acum</th>'+
+      '</tr></thead><tbody>'+out+'</tbody></table></div>';}
+
+  var tpSel=(BUD_TIPO==='mina'||BUD_TIPO==='planta')?BUD_TIPO:null;
+  var tpLbl=BUD_TIPO==='mina'?'Mina':BUD_TIPO==='planta'?'Planta':'Consolidado';
   const rows=[['Mina',mi],['Planta',pl],['Consolidado',tot]].map(function(x){const d=x[1];const dv=d.bAnual?(d.proy-d.bAnual)/d.bAnual:0;return '<tr><td>'+x[0]+'</td><td>'+fmtM(d.bAnual)+'</td><td>'+fmtM(d.proy)+'</td><td><span class="tag '+(dv>0?'bad':'ok')+'">'+(dv>0?'+':'')+(dv*100).toFixed(1)+'%</span></td></tr>';}).join('');
+
   return '<div class="crumb">'+ic('budget',13)+' Presupuesto '+ANIO+'</div><h2 class="title">Budget</h2>'+
-   '<div class="statwrap"><div class="ministat"><div class="l">Budget anual</div><div class="v">'+fmtM(tot.bAnual)+'</div></div><div class="ministat"><div class="l">Ejecutado</div><div class="v">'+fmtM(tot.rAcum)+'</div></div><div class="ministat"><div class="l">% ejecución</div><div class="v">'+(tot.bAnual?((tot.rAcum/tot.bAnual)*100).toFixed(0):0)+'%</div></div><div class="ministat"><div class="l">Saldo</div><div class="v">'+fmtM(tot.bAnual-tot.rAcum)+'</div></div></div>'+
-   '<div class="sectit"><span class="lft">Budget mensual vs Real</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r,s.o)+'</div>'+
+   cuadros('Consolidado · Mina + Planta',tot,'budget')+
+   cuadros('Mina',mi,'mina')+
+   cuadros('Planta',pl,'planta')+
+   '<div class="sectit"><span class="lft">Budget mensual vs Real vs Outlook</span></div><div class="chartbox">'+barChart(MESES,s.b,s.r,s.o)+'</div>'+
+   '<div class="sectit"><span class="lft">Detalle mensual · Real · Outlook · Budget</span><span class="pill">'+tpLbl+'</span></div>'+
+   '<div class="editbar" style="flex-wrap:wrap;gap:8px"><div class="tabs" style="margin:0;padding:0">'+
+     '<button class="'+(BUD_TIPO==='all'?'on':'')+'" onclick="setBudTipo(\'all\')">Consolidado</button>'+
+     '<button class="'+(BUD_TIPO==='mina'?'on':'')+'" onclick="setBudTipo(\'mina\')">Mina</button>'+
+     '<button class="'+(BUD_TIPO==='planta'?'on':'')+'" onclick="setBudTipo(\'planta\')">Planta</button></div></div>'+
+   detalle(tpSel)+
    '<div class="sectit"><span class="lft">Resumen presupuestario</span></div><div class="card"><table class="tbl"><tr><th>Segmento</th><th>Budget</th><th>Proy.</th><th>Desv.</th></tr>'+rows+'</table></div>'+
    '<div class="sectit"><span class="lft">Budget anual por grupo</span></div><div class="grid g2">'+['mina','planta'].map(function(tp){var arA=rootsOf(f,tp);var rr=arA.map(function(a){var tt=nodeTot(a.id);return '<div class="barrow"><div class="top"><b>'+a.name+'</b><span class="n">'+fmtK(tt.bAnual)+'</span></div></div>';}).join('');return '<div class="card"><div class="rolehead" style="margin-bottom:8px"><b>'+ic(tp,15)+' '+(tp==='mina'?'Mina':'Planta')+'</b><span class="cnt">'+fmtM(faenaTotals(f,tp).bAnual)+'</span></div>'+(rr||'<div class="empty">Sin áreas</div>')+'</div>';}).join('')+'</div>'+
-   (isAdmin()?('<div class="banner" style="margin-top:12px">'+ic('upload',18)+'<div>El presupuesto se carga en <b style="color:var(--copper2)">Configuración → Cargar Datos</b> (planilla). Aquí lo puedes ajustar a mano por área:</div></div><div class="sectit"><span class="lft">'+ic('edit',16)+' Editar presupuesto por área</span></div>'+editGrid('all')):'');}
-
+   '<div class="banner" style="margin-top:13px">'+ic('upload',18)+'<div>El presupuesto, el Outlook y el Real se cargan desde la planilla en <b style="color:var(--copper2)">Configuración → Cargar Datos</b>. No se editan a mano.</div></div>';}
 function viewProyeccion(){const f=curFaena();const fn=(DB.faenas.find(x=>x.id===f)||{}).name||'';const tot=faenaTotals(f);const dev=tot.devAnual;const s=monthly(f,null);
   const lab=MESES.slice();const bud=cumBudget(s.b);const fac=(function(){let b=0,r=0;for(let m=0;m<=MES_ACTUAL;m++){b+=s.b[m];r+=s.r[m]||0;}return b?r/b:1;})();
   const real=[];let rAcc=0,p=0;for(let m=0;m<12;m++){if(m<=MES_ACTUAL){rAcc+=s.r[m]||0;p=rAcc;real.push(rAcc);}else{p+=Math.round(s.b[m]*((fac+1)/2));real.push(p);}}
