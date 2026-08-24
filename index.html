@@ -41,9 +41,16 @@ input:focus,select:focus{border-color:var(--copper);background:rgba(226,123,46,.
 select option{background:#0c1a2b}
 label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase}
 .field{margin-bottom:13px}
-#login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:30px 22px;background:radial-gradient(700px 380px at 80% 0%,rgba(226,123,46,.16),transparent 60%),linear-gradient(160deg,#0b1c2e,#08111c)}
+#login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:34px 22px;background:radial-gradient(900px 460px at 78% -6%,rgba(226,123,46,.20),transparent 62%),radial-gradient(700px 500px at 12% 108%,rgba(46,109,168,.16),transparent 60%),linear-gradient(160deg,#0b1c2e,#070f19)}
+.logo-login{width:210px;margin:0 auto 22px;display:block}
+.logo-login img{width:100%;height:auto;display:block}
+.lg-title{font-size:24px;margin:0;text-align:center;letter-spacing:.2px;font-weight:800;color:#fff}
+.lg-title span{color:var(--copper2)}
+.lg-sub{color:var(--muted);font-size:11px;letter-spacing:2.4px;text-transform:uppercase;text-align:center;margin:7px 0 24px}
+.lg-card{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:20px 18px 18px;backdrop-filter:blur(6px);box-shadow:0 18px 44px rgba(0,0,0,.34)}
+.lg-foot{margin-top:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.34);text-align:center;font-weight:700}
 .ticker{font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:700;margin-bottom:18px;text-transform:uppercase;text-align:center}
-.loginbox{width:100%;max-width:380px}
+.loginbox{width:100%;max-width:372px}
 .logo-big{display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:26px}
 .logo-big h1{font-size:21px;margin:0;text-align:center;letter-spacing:.5px}
 .logo-big .sub{color:var(--muted);font-size:11px;letter-spacing:3px;text-transform:uppercase;text-align:center;margin-top:5px}
@@ -299,17 +306,16 @@ h2.title{font-size:22px;margin:5px 0 4px}
 
 <div id="login">
   <div class="loginbox">
-    <div class="ticker">TSX: CS &nbsp;|&nbsp; ASX: CSC &nbsp;|&nbsp; capstonecopper.com</div>
-    <div class="logo-big">
-      <div id="logoLogin"></div>
-      <div><h1>MANTOS CONTROL <span style="color:var(--copper2)">360</span></h1>
-        <div class="sub">Mantos Blancos · Gestión de Costos · En vivo</div></div>
+    <div id="logoLogin" class="logo-login"></div>
+    <h1 class="lg-title">Mantos Control <span>360</span></h1>
+    <div class="lg-sub">Control de costos · Mina y Planta</div>
+    <div class="lg-card">
+      <div class="field"><label>Usuario</label><input id="lg_user" autocomplete="username" placeholder="nombre.apellido"></div>
+      <div class="field"><label>Contraseña</label><input id="lg_pass" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn" id="lg_btn" onclick="doLogin()">Ingresar</button>
+      <div class="loginerr" id="lg_err"></div>
     </div>
-    <div class="field"><label>Usuario</label><input id="lg_user" autocomplete="username" placeholder="usuario" value=""></div>
-    <div class="field"><label>Contraseña</label><input id="lg_pass" type="password" autocomplete="current-password" placeholder="clave"></div>
-    <button class="btn" id="lg_btn" onclick="doLogin()">Ingresar</button>
-    <div class="loginerr" id="lg_err"></div>
-    <div class="demo-creds">Ingresa con tu usuario y clave para ver los costos en vivo.</div>
+    <div class="lg-foot">Capstone Copper &nbsp;·&nbsp; Mantos Blancos &nbsp;·&nbsp; Chile</div>
   </div>
 </div>
 
@@ -358,7 +364,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18n · marca oficial Capstone + arregla exportar a PPT';
+const APP_VERSION='2026-08-18o · inicio nuevo + icono e imagen de marca oficiales';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
