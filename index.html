@@ -364,7 +364,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18o · inicio nuevo + icono e imagen de marca oficiales';
+const APP_VERSION='2026-08-18p · elegir mes al exportar el PPT';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -619,7 +619,7 @@ function setAreaMes(v){AREA_MES=+v;render();}
 function setCierreTipo(v){CIERRE_TIPO=v;render();}
 function setCierreMes(v){CIERRE_MES=+v;CIERRE_MANUAL=true;render();}
 /* Último mes con Real cargado: si Paula sube agosto, el Cierre se abre en agosto y no en julio */
-function ultimoMesConDatos(f){for(var mm=11;mm>=0;mm--){if(monthTot(f,null,mm).hasR)return mm;}return -1;}
+function ultimoMesConDatos(f){for(var mm=Math.min(11,MES_ACTUAL);mm>=0;mm--){if(monthTot(f,null,mm).hasR)return mm;}return -1;}
 function autoCierreMes(force){if(CIERRE_MANUAL&&!force)return;
   var u=ultimoMesConDatos(curFaena());if(u>=0){CIERRE_MES=u;if(force)CIERRE_MANUAL=false;}}
 function monthTot(f,tipo,m){const ar=leafAreasOf(f,tipo);let r=0,b=0,o=0,hasR=false;ar.forEach(a=>{const c=C(a.id);b+=c.budget[m]||0;o+=(c.outlook&&c.outlook[m])||0;if(c.real[m]!=null){r+=c.real[m];hasR=true;}});return {r:r,b:b,o:o,hasR:hasR};}
@@ -655,7 +655,23 @@ function viewCierre(){const f=curFaena();const m=Math.min(11,Math.max(0,CIERRE_M
    '<div class="sectit"><span class="lft">Hallazgos clave</span></div><div class="card"><ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px">'+hall+'</ul></div>';}
 function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.async=true;s.src=src;s.onload=function(){res();};s.onerror=function(){rej(new Error('no cargó'));};document.head.appendChild(s);});}
 function ensurePptx(){if(window.PptxGenJS)return Promise.resolve();return loadScript('./pptxgen.bundle.js').catch(function(){return loadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');}).catch(function(){return loadScript('https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');}).then(function(){if(!window.PptxGenJS)throw new Error('PptxGenJS no disponible');});}
-function exportCierrePPT(){toast('Preparando exportación…');ensurePptx().then(buildCierrePPT).catch(function(e){toast('No se pudo cargar el exportador (revisa la conexión a internet): '+e.message);});}
+function exportCierrePPT(){
+  var sug=CIERRE_MES;if(sug==null||sug<0||sug>11)sug=MES_ACTUAL;
+  var ops=MESES.map(function(mm,i){return '<option value="'+i+'"'+(i===sug?' selected':'')+(i>MES_ACTUAL?' data-fut="1"':'')+'>'+(MES_FULL[i].charAt(0).toUpperCase()+MES_FULL[i].slice(1))+' '+ANIO+(i>MES_ACTUAL?' (aún no cierra)':'')+'</option>';}).join('');
+  var tps=[['all','Mina y Planta'],['mina','Solo Mina'],['planta','Solo Planta']].map(function(t){
+    return '<option value="'+t[0]+'"'+(CIERRE_TIPO===t[0]?' selected':'')+'>'+t[1]+'</option>';}).join('');
+  modal('<h3>'+ic('doc',18)+' Exportar informe a PowerPoint</h3>'+
+    '<p class="muted" style="line-height:1.7">Elige el mes que quieres presentar y qué incluir.</p>'+
+    '<div class="field"><label>Mes del cierre</label><select id="pp_mes">'+ops+'</select></div>'+
+    '<div class="field"><label>Alcance</label><select id="pp_tipo">'+tps+'</select></div>'+
+    '<button class="btn" onclick="lanzarPPT()">'+ic('doc',16)+' Generar presentación</button>'+
+    '<button class="btn ghost" style="margin-top:8px" onclick="closeModal()">Cancelar</button>');}
+function lanzarPPT(){
+  var m=$('#pp_mes'),t=$('#pp_tipo');
+  if(m){CIERRE_MES=+m.value;CIERRE_MANUAL=true;}
+  if(t)CIERRE_TIPO=t.value;
+  closeModal();toast('Preparando exportación…');
+  ensurePptx().then(buildCierrePPT).catch(function(e){toast('No se pudo cargar el exportador (revisa la conexión a internet): '+e.message);});}
 /* La foto de portada vive como archivo suelto en el repo (portada.jpg). Si no está, la portada cae
    en su versión geométrica sin romperse. Cambiar la foto = reemplazar ese archivo, sin tocar código. */
 async function cargarPortada(){
