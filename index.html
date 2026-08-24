@@ -364,7 +364,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18q · graficos nativos de PowerPoint en el informe';
+const APP_VERSION='2026-08-18r · informe editable + lectura redactada por la plataforma';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -588,6 +588,7 @@ async function fetchAll(){
   costs.forEach(c=>{if(!DB.costs[c.area_id])DB.costs[c.area_id]=nuevoC();var d=DB.costs[c.area_id];if(!d.outlook)d.outlook=Array(12).fill(0);d.budget[c.month]=c.budget==null?0:Number(c.budget);d.real[c.month]=c.real==null?null:Number(c.real);d.outlook[c.month]=c.outlook==null?0:Number(c.outlook);});
   DB.dataUpdated=costs.reduce(function(m,c){return (c.updated_at&&(!m||c.updated_at>m))?c.updated_at:m;},null);
   try{autoCierreMes();}catch(e){}
+  try{var pc=DB.settings&&DB.settings.pptCfg;if(pc){PPT_CFG.titulo=pc.titulo||PPT_CFG.titulo;PPT_CFG.autor=pc.autor||'';if(pc.slides)PPT_CFG.slides=pc.slides;}}catch(e){}
 }
 async function refreshData(){const b=$('#refBtn');b.innerHTML='<span class="spin"></span>';try{await fetchAll();render();toast('Datos actualizados');}catch(e){toast('Error al actualizar');}b.innerHTML=ic('refresh',17);}
 function clearCache(){if(!confirm('¿Limpiar la caché y traer la última versión de la plataforma? Se recargará la página.'))return;
@@ -614,6 +615,7 @@ function render(){if(!SESSION)return;$('#tb_name').textContent=SESSION.name;$('#
 let CIERRE_MES=Math.max(0,MES_ACTUAL-1),CIERRE_MANUAL=false,CIERRE_TIPO='all';
 let AREA_MES=-1; /* -1 = acumulado del año; 0..11 = un mes puntual */
 let BUD_TIPO='all';
+var PPT_CFG={titulo:'Cierre de Mes',autor:'',lectura:'',slides:{idx:true,areas:true,ytd:true,arbol:true,desv:true}};
 function setBudTipo(v){BUD_TIPO=v;render();}
 function setAreaMes(v){AREA_MES=+v;render();}
 function setCierreTipo(v){CIERRE_TIPO=v;render();}
@@ -655,21 +657,87 @@ function viewCierre(){const f=curFaena();const m=Math.min(11,Math.max(0,CIERRE_M
    '<div class="sectit"><span class="lft">Hallazgos clave</span></div><div class="card"><ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px">'+hall+'</ul></div>';}
 function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.async=true;s.src=src;s.onload=function(){res();};s.onerror=function(){rej(new Error('no cargó'));};document.head.appendChild(s);});}
 function ensurePptx(){if(window.PptxGenJS)return Promise.resolve();return loadScript('./pptxgen.bundle.js').catch(function(){return loadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');}).catch(function(){return loadScript('https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');}).then(function(){if(!window.PptxGenJS)throw new Error('PptxGenJS no disponible');});}
+/* Redacta la lectura del cierre a partir de los datos: quién movió la aguja,
+   si es puntual o tendencia, y qué le hace a la proyección del año. */
+function analisisCierre(f,cf,m){
+  var tot=monthTot(f,cf,m),ytd=ytdTot(f,cf,m),mo=monthly(f,cf);
+  var ejec=tot.b?Math.round(tot.r/tot.b*100):0;
+  var devM=tot.b?(tot.r-tot.b)/tot.b:0, devY=ytd.b?(ytd.r-ytd.b)/ytd.b:0;
+  var mn=(MES_FULL[m]||MESES[m]); mn=mn.charAt(0).toUpperCase()+mn.slice(1);
+  var M=function(v){var a=Math.abs(v||0);return 'US$'+(a>=1000?(a/1000).toFixed(1)+'M':Math.round(a).toLocaleString('es-CL')+'K');};
+  var P=function(v){return (v>0?'+':'')+(v*100).toFixed(1)+'%';};
+  var t=[];
+  t.push(mn+' cerró en '+M(tot.r)+' contra un budget de '+M(tot.b)+', es decir '+ejec+'% de ejecución ('+P(devM)+').');
+  if(tot.o)t.push('El Outlook para el mes era '+M(tot.o)+(tot.o?', así que el real quedó '+P((tot.r-tot.o)/tot.o)+' respecto de esa proyección.':'.'));
+  /* quiénes explican la desviación */
+  var ar=leafAreasOf(f,cf).map(function(a){var c=C(a.id);var r=c.real[m],b=c.budget[m]||0;
+    return {n:a.name,d:(r==null?0:r)-b,r:(r==null?0:r),b:b};}).filter(function(x){return x.b||x.r;});
+  var sobre=ar.filter(function(x){return x.d>0;}).sort(function(x,y){return y.d-x.d;});
+  var bajo=ar.filter(function(x){return x.d<0;}).sort(function(x,y){return x.d-y.d;});
+  if(sobre.length){var top=sobre.slice(0,3),sum=sobre.reduce(function(a,x){return a+x.d;},0);
+    t.push('Del sobregasto de '+M(sum)+', '+top.map(function(x){return x.n+' aporta '+M(x.d);}).join(', ')+'.');}
+  if(bajo.length){var b3=bajo.slice(0,2);
+    t.push('Compensan por debajo del budget: '+b3.map(function(x){return x.n+' ('+M(x.d)+')';}).join(' y ')+'.');}
+  /* puntual o tendencia: comparar cada área contra su propio promedio anterior */
+  var tend=[];
+  leafAreasOf(f,cf).forEach(function(a){var c=C(a.id);var r=c.real[m];if(r==null||!r)return;
+    var n=0,su=0;for(var k=0;k<m;k++){if(c.real[k]!=null&&c.real[k]!==0){n++;su+=c.real[k];}}
+    if(n<2)return;var prom=su/n;if(prom<=0)return;var sal=(r-prom)/prom;
+    if(sal>0.25)tend.push({n:a.name,sal:sal,prom:prom,r:r});});
+  tend.sort(function(x,y){return y.sal-x.sal;});
+  if(tend.length){var e=tend[0];
+    t.push('Fuera de patrón: '+e.n+' gastó '+M(e.r)+' contra un promedio de '+M(e.prom)+' en los meses anteriores ('+P(e.sal)+')'+(tend.length>1?(', y hay '+(tend.length-1)+' equipo(s) más en la misma situación.'):'.'));}
+  /* qué le hace al año */
+  var pr=proyRitmo(mo.r); var bAnual=0; leafAreasOf(f,cf).forEach(function(a){var c=C(a.id);for(var k=0;k<12;k++)bAnual+=c.budget[k]||0;});
+  if(pr.meses){t.push('Acumulado del año: '+M(ytd.r)+' contra '+M(ytd.b)+' ('+P(devY)+'). Al ritmo de los '+pr.meses+' meses cargados, el cierre a diciembre proyecta '+M(pr.proy)+' frente a un budget anual de '+M(bAnual)+', o sea '+M(Math.abs(pr.proy-bAnual))+(pr.proy>bAnual?' por sobre':' bajo')+' lo presupuestado.');}
+  return t.join(' ');}
+
 function exportCierrePPT(){
   var sug=CIERRE_MES;if(sug==null||sug<0||sug>11)sug=MES_ACTUAL;
   var ops=MESES.map(function(mm,i){return '<option value="'+i+'"'+(i===sug?' selected':'')+(i>MES_ACTUAL?' data-fut="1"':'')+'>'+(MES_FULL[i].charAt(0).toUpperCase()+MES_FULL[i].slice(1))+' '+ANIO+(i>MES_ACTUAL?' (aún no cierra)':'')+'</option>';}).join('');
   var tps=[['all','Mina y Planta'],['mina','Solo Mina'],['planta','Solo Planta']].map(function(t){
     return '<option value="'+t[0]+'"'+(CIERRE_TIPO===t[0]?' selected':'')+'>'+t[1]+'</option>';}).join('');
-  modal('<h3>'+ic('doc',18)+' Exportar informe a PowerPoint</h3>'+
-    '<p class="muted" style="line-height:1.7">Elige el mes que quieres presentar y qué incluir.</p>'+
-    '<div class="field"><label>Mes del cierre</label><select id="pp_mes">'+ops+'</select></div>'+
-    '<div class="field"><label>Alcance</label><select id="pp_tipo">'+tps+'</select></div>'+
+  var quien=(PPT_CFG.autor||((SESSION&&(SESSION.name))||'Ingeniería de Costos'));
+  modalWide('<h3>'+ic('doc',18)+' Preparar informe para la presentación</h3>'+
+    '<p class="muted" style="line-height:1.7">Ajusta lo que quieras antes de generar. Todo lo de aquí es editable.</p>'+
+    '<div class="row2">'+
+      '<div class="field"><label>Mes del cierre</label><select id="pp_mes" onchange="pptRecalcular()">'+ops+'</select></div>'+
+      '<div class="field"><label>Alcance</label><select id="pp_tipo" onchange="pptRecalcular()">'+tps+'</select></div>'+
+    '</div>'+
+    '<div class="row2">'+
+      '<div class="field"><label>Título de la portada</label><input id="pp_titulo" value="'+escHtml(PPT_CFG.titulo||'Cierre de Mes')+'"></div>'+
+      '<div class="field"><label>Presentado por</label><input id="pp_autor" value="'+escHtml(quien)+'"></div>'+
+    '</div>'+
+    '<div class="field"><label>Lectura del cierre <span class="muted" style="font-weight:500">· redactada por la plataforma, corrígela a tu gusto</span></label>'+
+      '<textarea id="pp_lectura" rows="7" style="width:100%;font-family:inherit;font-size:12.5px;line-height:1.65;padding:11px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:inherit;resize:vertical"></textarea></div>'+
+    '<div class="flexbtns" style="margin-bottom:12px"><button class="btn sm ghost" style="width:auto" onclick="pptRecalcular(true)">'+ic('refresh',14)+' Volver a redactar</button></div>'+
+    '<label>Láminas a incluir</label>'+
+    ['idx','areas','ytd','arbol','desv'].map(function(k,i){
+      var lbl=['Índice','Real vs Budget por área','Acumulado del año','Mina y Planta en detalle','Mayores desviaciones'][i];
+      return '<div class="perm"><span>'+lbl+'</span><input type="checkbox" id="pp_'+k+'"'+(PPT_CFG.slides[k]!==false?' checked':'')+' style="width:18px;height:18px;accent-color:var(--copper)"></div>';}).join('')+
+    '<div style="height:14px"></div>'+
     '<button class="btn" onclick="lanzarPPT()">'+ic('doc',16)+' Generar presentación</button>'+
-    '<button class="btn ghost" style="margin-top:8px" onclick="closeModal()">Cancelar</button>');}
+    '<button class="btn ghost" style="margin-top:8px" onclick="closeModal()">Cancelar</button>');
+  pptRecalcular();}
+function pptRecalcular(forzar){
+  var el=$('#pp_lectura');if(!el)return;
+  if(!forzar&&el.value&&el.dataset.tocado==='1')return;
+  var m=+($('#pp_mes')?$('#pp_mes').value:CIERRE_MES);
+  var tp=$('#pp_tipo')?$('#pp_tipo').value:'all';
+  var cf=(tp==='mina'||tp==='planta')?tp:null;
+  el.value=analisisCierre(curFaena(),cf,m);
+  el.dataset.tocado='0';
+  el.oninput=function(){el.dataset.tocado='1';};}
 function lanzarPPT(){
   var m=$('#pp_mes'),t=$('#pp_tipo');
   if(m){CIERRE_MES=+m.value;CIERRE_MANUAL=true;}
   if(t)CIERRE_TIPO=t.value;
+  PPT_CFG.titulo=($('#pp_titulo')&&$('#pp_titulo').value.trim())||'Cierre de Mes';
+  PPT_CFG.autor=($('#pp_autor')&&$('#pp_autor').value.trim())||'Ingeniería de Costos';
+  PPT_CFG.lectura=($('#pp_lectura')&&$('#pp_lectura').value.trim())||'';
+  ['idx','areas','ytd','arbol','desv'].forEach(function(k){var c=$('#pp_'+k);if(c)PPT_CFG.slides[k]=c.checked;});
+  try{DB.settings=DB.settings||{};DB.settings.pptCfg={titulo:PPT_CFG.titulo,autor:PPT_CFG.autor,slides:PPT_CFG.slides};
+    rest('mantos_settings','POST',{key:'pptCfg',value:DB.settings.pptCfg},'resolution=merge-duplicates').catch(function(){});}catch(e){}
   closeModal();toast('Preparando exportación…');
   ensurePptx().then(buildCierrePPT).catch(function(e){toast('No se pudo cargar el exportador (revisa la conexión a internet): '+e.message);});}
 /* La foto de portada vive como archivo suelto en el repo (portada.jpg). Si no está, la portada cae
@@ -754,19 +822,20 @@ async function buildCierrePPT(){
   /* marca Capstone arriba a la izquierda */
   s1.addImage({data:'data:image/png;base64,'+MARCA_B64,x:0.55,y:0.34,w:2.35,h:0.86});
   /* título en dos tiempos */
-  s1.addText('CIERRE DE MES',{x:0.55,y:1.62,w:8.2,h:0.78,color:WT,fontSize:40,bold:true,fontFace:FONT,charSpacing:-0.5});
+  s1.addText((PPT_CFG.titulo||'Cierre de Mes').toUpperCase(),{x:0.55,y:1.62,w:8.2,h:0.78,color:WT,fontSize:40,bold:true,fontFace:FONT,charSpacing:-0.5});
   s1.addText(mCap.toUpperCase()+' '+ANIO,{x:0.55,y:2.36,w:8.2,h:0.78,color:COP,fontSize:40,bold:true,fontFace:FONT,charSpacing:-0.5});
   s1.addText('Control de costos Real · Outlook · Budget\n'+cLab+' · '+fn,{x:0.6,y:3.20,w:5.2,h:0.78,color:'E2E8F0',fontSize:13,fontFace:FONT,lineSpacingMultiple:1.2});
   /* presentado por */
   s1.addText('PRESENTADO POR:',{x:0.55,y:4.26,w:5,h:0.26,color:COP,fontSize:10.5,bold:true,fontFace:FONT,charSpacing:0.6});
-  s1.addText('Paula Jorquera · Ingeniería de Costos',{x:0.55,y:4.52,w:6.5,h:0.3,color:WT,fontSize:13,bold:true,fontFace:FONT});
+  s1.addText((PPT_CFG.autor||'Ingeniería de Costos'),{x:0.55,y:4.52,w:6.5,h:0.3,color:WT,fontSize:13,bold:true,fontFace:FONT});
   /* franja inferior con filete cobre */
   s1.addShape('rect',{x:0,y:4.96,w:W,h:0.665,fill:{color:'0B1B2B'},line:{type:'none'}});
   s1.addShape('rect',{x:0,y:4.96,w:W,h:0.022,fill:{color:COP},line:{type:'none'}});
   s1.addText(mCap+' '+ANIO+'  |  '+fn+', Chile',{x:0,y:5.05,w:W,h:0.3,color:WT,fontSize:13,fontFace:FONT,align:'center'});
   s1.addText('CAPSTONE COPPER   |   Mantos Control 360',{x:0,y:5.35,w:W,h:0.22,color:'93A7BD',fontSize:7.5,fontFace:FONT,align:'center',charSpacing:0.5});
 
-  /* ===== 2 · Índice ===== */
+  /* ===== 2 · Índice (opcional) ===== */
+  if(PPT_CFG.slides.idx!==false){
   var s2=P.addSlide();head(s2,'CONTENIDO DE LA SESIÓN','Índice');
   var nMi=Math.max(1,Math.ceil(filasArbol('mina').length/12)),nPl=Math.max(1,Math.ceil(filasArbol('planta').length/12));
   var lam=function(a,b){return b>1?'Láminas '+a+'-'+(a+b-1):'Lámina '+a;};
@@ -781,7 +850,7 @@ async function buildCierrePPT(){
     s2.addText(it[0],{x:x+0.18,y:y+0.2,w:0.8,h:0.34,color:COP,fontSize:16,bold:true,fontFace:FONT});
     s2.addText(it[1],{x:x+0.18,y:y+0.62,w:2.5,h:0.5,color:NAVY,fontSize:11,bold:true,fontFace:FONT});
     s2.addText(it[2],{x:x+0.18,y:y+1.14,w:2.5,h:0.22,color:FAINT,fontSize:8,fontFace:FONT});});
-  foot(s2);
+  foot(s2);}
 
   /* ===== 3 · Resumen del mes ===== */
   var s3=P.addSlide();head(s3,'CONTROL DE COSTOS  |  '+mCap.toUpperCase()+' '+ANIO,'Resumen del mes');
@@ -812,6 +881,7 @@ async function buildCierrePPT(){
   foot(s3);
 
   /* ===== 4 · Real vs Budget por área (GRÁFICO NATIVO de PowerPoint) ===== */
+  if(PPT_CFG.slides.areas!==false){
   var s4=P.addSlide();head(s4,'DETALLE POR ÁREA  |  '+mCap.toUpperCase()+' '+ANIO,'Real vs Budget por área');
   (function(){var top=areas.slice(0,10);
     if(!top.length){s4.addText('Sin cifras cargadas para este mes.',{x:0.5,y:2.4,w:9,h:0.4,color:MUT,fontSize:11,fontFace:FONT,align:'center'});return;}
@@ -831,9 +901,10 @@ async function buildCierrePPT(){
       plotArea:{fill:{color:'FFFFFF'}}});
     s4.addText('Cifras en US$K. '+(areas.length>top.length?('Se muestran las '+top.length+' áreas de mayor gasto de '+areas.length+' con movimiento; el detalle completo está en las láminas de Mina y Planta.'):'Todas las áreas con movimiento en el mes.'),
       {x:0.5,y:5.13,w:9,h:0.24,color:FAINT,fontSize:7,fontFace:FONT});})();
-  foot(s4);
+  foot(s4);}
 
   /* ===== 5 · Acumulado del año (GRÁFICO NATIVO de PowerPoint) ===== */
+  if(PPT_CFG.slides.ytd!==false){
   var s5=P.addSlide();head(s5,'TRAYECTORIA '+ANIO,'Acumulado del año');
   (function(){
     if(!labs.length){s5.addText('Sin meses cargados.',{x:0.5,y:2.4,w:9,h:0.4,color:MUT,fontSize:11,fontFace:FONT,align:'center'});return;}
@@ -852,7 +923,7 @@ async function buildCierrePPT(){
       plotArea:{fill:{color:'FFFFFF'}}});
     s5.addText('Al cierre de '+mCap+': real '+money(ytd.r)+' contra budget '+money(ytd.b)+'  ·  desviación '+pct(devY)+'  ·  cifras en US$K',
       {x:0.5,y:5.13,w:9,h:0.24,color:FAINT,fontSize:7.5,fontFace:FONT});})();
-  foot(s5);
+  foot(s5);}
 
   /* ===== 6 y 7 · Mina y Planta (paginadas, sin recortes silenciosos) ===== */
   function filasArbol(tipo){var rows=[];
@@ -875,10 +946,12 @@ async function buildCierrePPT(){
         s.addText('Mostrando '+rows.length+' de '+total+' líneas · los totales de cada categoría suman sus equipos.',
           {x:0.5,y:5.16,w:9,h:0.22,color:FAINT,fontSize:7,fontFace:FONT});}
       foot(s);});}
-  arbol('Mina por categoría','ESTRUCTURA DE COSTOS  |  MINA · '+mCap.toUpperCase(),pgMina,rMina.length);
-  arbol('Planta por familia','ESTRUCTURA DE COSTOS  |  PLANTA · '+mCap.toUpperCase(),pgPlanta,rPlanta.length);
+  if(PPT_CFG.slides.arbol!==false){
+    if(!cf||cf==='mina')arbol('Mina por categoría','ESTRUCTURA DE COSTOS  |  MINA · '+mCap.toUpperCase(),pgMina,rMina.length);
+    if(!cf||cf==='planta')arbol('Planta por familia','ESTRUCTURA DE COSTOS  |  PLANTA · '+mCap.toUpperCase(),pgPlanta,rPlanta.length);}
 
-  /* ===== 8 · Mayores desviaciones ===== */
+  /* ===== 8 · Mayores desviaciones (opcional) ===== */
+  if(PPT_CFG.slides.desv!==false){
   var s8=P.addSlide();head(s8,'ANÁLISIS  |  '+mCap.toUpperCase()+' '+ANIO,'Mayores desviaciones');
   var over=areas.filter(function(a){return a.b&&(a.r-a.b)/a.b>0.05;})
                 .sort(function(x,y){return (y.r-y.b)-(x.r-x.b);}).slice(0,5);
@@ -898,12 +971,9 @@ async function buildCierrePPT(){
   s8.addShape('rect',{x:0.5,y:3.95,w:9,h:1.15,fill:{color:SOFT},line:{color:LINE,width:0.75}});
   s8.addShape('rect',{x:0.5,y:3.95,w:0.055,h:1.15,fill:{color:COP},line:{type:'none'}});
   s8.addText('Lectura del cierre',{x:0.72,y:4.05,w:8.6,h:0.24,color:NAVY,fontSize:10,bold:true,fontFace:FONT});
-  var lect='El mes cerró en '+money(tot.r)+' contra un budget de '+money(tot.b)+' ('+ejec+'% de ejecución, '+pct(devM)+'). '+
-    'En el año, el real acumulado llega a '+money(ytd.r)+' frente a '+money(ytd.b)+' presupuestados ('+pct(devY)+'). '+
-    'Del gasto del mes, Mina aporta '+money(mina.r)+' y Planta '+money(planta.r)+'.'+
-    (over.length?' Las áreas sobre presupuesto suman '+money(over.reduce(function(t,o){return t+(o.r-o.b);},0))+' por sobre lo planificado.':'');
+  var lect=(PPT_CFG.lectura&&PPT_CFG.lectura.trim())?PPT_CFG.lectura.trim():analisisCierre(f,cf,m);
   s8.addText(lect,{x:0.72,y:4.3,w:8.6,h:0.7,color:INK,fontSize:9,fontFace:FONT,lineSpacingMultiple:1.25});
-  foot(s8);
+  foot(s8);}
 
   toast('Generando PPT…');
   var fname='Cierre_'+fn.replace(/[^a-z0-9]+/gi,'_')+'_'+mCap+'_'+ANIO+'.pptx';
