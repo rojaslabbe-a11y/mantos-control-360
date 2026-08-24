@@ -356,7 +356,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18l · corrige Areas/Equipos rotos + faena por defecto';
+const APP_VERSION='2026-08-18m · Real hasta el mes actual, aviso de Outlook, solo dona';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -425,7 +425,7 @@ function nodeTot(id){var ls=leaves(id);var o={bAcum:0,rAcum:0,bAnual:0,oAcum:0,o
   o.dev=o.bAcum?(o.rAcum-o.bAcum)/o.bAcum:0;o.devAnual=o.bAnual?(o.proy-o.bAnual)/o.bAnual:0;return o;}
 function nodeMon(id){var ls=leaves(id);var b=Array(12).fill(0),r=Array(12).fill(0),o=Array(12).fill(0),hr=Array(12).fill(false);
   ls.forEach(function(a){var c=C(a.id);for(var m=0;m<12;m++){b[m]+=c.budget[m]||0;o[m]+=(c.outlook&&c.outlook[m])||0;if(c.real[m]!=null){r[m]+=c.real[m];hr[m]=true;}}});
-  return{b:b,o:o,r:r.map(function(v,m){return hr[m]?v:null;})};}
+  return{b:b,o:o,r:r.map(function(v,m){return (hr[m]&&m<=MES_ACTUAL)?v:null;})};}
 function scopeBanner(){if(!SCOPE||!SCOPE.length)return '';var names=SCOPE.map(function(id){var a=DB.areas.find(function(x){return x.id===id;});return a?a.name:null;}).filter(Boolean);if(!names.length)return '';return '<div class="banner" style="margin-bottom:12px">'+ic('shield',18)+'<div>Tu vista personalizada · <b style="color:var(--copper2)">'+names.join(' · ')+'</b></div></div>';}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function modName(id){return MODULES[id]?MODULES[id].name:(((DB.modules||[]).find(m=>m.id===id)||{}).name||'');}
@@ -434,7 +434,8 @@ function modName(id){return MODULES[id]?MODULES[id].name:(((DB.modules||[]).find
 function nuevoC(){return {budget:Array(12).fill(0),real:Array(12).fill(null),outlook:Array(12).fill(0)};}
 function C(id){var c=DB.costs[id];if(!c)return nuevoC();if(!c.outlook)c.outlook=Array(12).fill(0);return c;}
 /* Proyección al ritmo real: promedio de los meses con Real cargado x 12 (pedido de Paula). */
-function proyRitmo(realArr){var n=0,sum=0;for(var m=0;m<12;m++){var v=realArr[m];if(v!=null&&v!==0){n++;sum+=v;}}
+function proyRitmo(realArr){var n=0,sum=0;
+  for(var m=0;m<12&&m<=MES_ACTUAL;m++){var v=realArr&&realArr[m];if(v!=null&&v!==0){n++;sum+=v;}}
   return {proy:n?Math.round(sum/n*12):0,meses:n,prom:n?sum/n:0};}
 function areaTotals(id){const c=C(id);let bA=0,rA=0,bAn=0,oA=0,oAn=0;
   for(let m=0;m<12;m++){bAn+=c.budget[m]||0;oAn+=(c.outlook&&c.outlook[m])||0;
@@ -447,7 +448,7 @@ function faenaTotals(f,t){const ar=leafAreasOf(f,t);let o={bAcum:0,rAcum:0,bAnua
   o.dev=o.bAcum?(o.rAcum-o.bAcum)/o.bAcum:0;o.devAnual=o.bAnual?(o.proy-o.bAnual)/o.bAnual:0;return o;}
 function monthly(f,t){const ar=leafAreasOf(f,t);const b=Array(12).fill(0),r=Array(12).fill(0),o=Array(12).fill(0);const hr=Array(12).fill(false);
   ar.forEach(a=>{const c=C(a.id);for(let m=0;m<12;m++){b[m]+=c.budget[m]||0;o[m]+=(c.outlook&&c.outlook[m])||0;if(c.real[m]!=null){r[m]+=c.real[m];hr[m]=true;}}});
-  return{b:b,o:o,r:r.map((v,m)=>hr[m]?v:null)};}
+  return{b:b,o:o,r:r.map((v,m)=>(hr[m]&&m<=MES_ACTUAL)?v:null)};}
 
 /* ===== Gráfico SVG (sin librerías) ===== */
 let CHART_Q=[],CHART_INST=[],CHART_N=0;
@@ -920,10 +921,10 @@ function viewDashboard(){const f=curFaena(),fn=(DB.faenas.find(x=>x.id===f)||{})
    '<div class="ministat"><div class="l">Proyección año</div><div class="v">'+fmtM(tot.proy)+'</div></div></div>'+
    (view==='all'?('<div class="grid g2" style="margin-top:13px"><div class="card kpi accent"><div class="lbl">'+ic('mina',14)+' Costo Mina</div><div class="val">'+fmtM(mi.rAcum)+'</div><span class="delta '+(mi.dev>0?'up':'down')+'">'+(mi.dev>0?'+':'')+(mi.dev*100).toFixed(1)+'% vs budget</span>'+sparkline(sm.r,'#E27B2E')+'</div>'+
    '<div class="card kpi accent"><div class="lbl">'+ic('planta',14)+' Costo Planta</div><div class="val">'+fmtM(pl.rAcum)+'</div><span class="delta '+(pl.dev>0?'up':'down')+'">'+(pl.dev>0?'+':'')+(pl.dev*100).toFixed(1)+'% vs budget</span>'+sparkline(sp.r,'#4C76A0')+'</div></div>'):'')+
-   '<div class="sectit"><span class="lft">Real vs Budget · '+ANIO+'</span><span class="pill">mensual · US$K</span></div><div class="chartbox" style="height:330px">'+barChart(MESES,s.b,s.r,s.o)+'</div>'+
+   '<div class="sectit"><span class="lft">Real vs Budget'+(s.o&&s.o.some(function(v){return (v||0)!==0;})?' vs Outlook':'')+' · '+ANIO+'</span><span class="pill">mensual · US$K</span></div>'+
+   (s.o&&s.o.some(function(v){return (v||0)!==0;})?'':'<div class="banner" style="margin-bottom:8px">'+ic('doc',18)+'<div>El <b>Outlook</b> todavía no aparece porque la base no tiene esa columna cargada. Vuelve a subir la planilla en <b style="color:var(--copper2)">Configuración → Cargar Datos</b> y la tercera barra se dibuja sola.</div></div>')+'<div class="chartbox" style="height:330px">'+barChart(MESES,s.b,s.r,s.o)+'</div>'+
    '<div class="sectit"><span class="lft">Budget vs Real por área</span><span class="pill">acumulado del año</span></div><div class="chartbox" style="height:'+Math.max(240,60+cmp.length*42)+'px">'+butterfly(cmp)+'</div>'+
    '<div class="sectit"><span class="lft">Costo acumulado · Real vs Budget vs Outlook</span><span class="pill">US$K acumulado</span></div><div class="chartbox">'+lineChart(MESES,cumBudget(s.b),cumReal(s.r),'Budget acum.','Real acum.',cumOL(s.o),'Outlook acum.')+'</div>'+
-   '<div class="sectit"><span class="lft">Mayor gasto por área</span><span class="pill">Real YTD</span></div><div class="chartbox" style="height:'+Math.max(230,50+Math.min(9,dist.length)*38)+'px">'+hbars(dist.slice(0,9))+'</div>'+
    '<div class="sectit"><span class="lft">Distribución de costo por área</span><span class="pill">Real YTD</span></div><div class="chartbox" style="height:300px">'+donut(dist.slice(0,9))+'</div>'+
    '<div class="sectit"><span class="lft">Proyección de cierre de año</span><span class="pill">al ritmo de gasto actual</span></div><div class="card">'+
    '<p class="muted" style="margin:0 0 11px;line-height:1.6">Si el gasto sigue al mismo ritmo: promedio de los <b>'+(tot.mesesReal||0)+' mes'+((tot.mesesReal||0)===1?'':'es')+'</b> con Real cargado ('+fmtM(tot.promMes||0)+' por mes) proyectado a los 12 meses del año.</p>'+
