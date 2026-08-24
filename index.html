@@ -356,7 +356,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18k · Budget por Mina y Planta + detalle con Outlook';
+const APP_VERSION='2026-08-18l · corrige Areas/Equipos rotos + faena por defecto';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -409,7 +409,8 @@ function perms(){if(!SESSION)return[];const r=roleOf(SESSION);return r?(r.perms|
 function can(m){return perms().indexOf(m)>=0;}
 function canEdit(){const r=roleOf(SESSION);return !(r&&r.view_only);}
 function isAdmin(){const r=roleOf(SESSION);return !!(r&&(r.id==='r0'||(r.perms||[]).indexOf('config')>=0||(r.perms||[]).indexOf('usuarios')>=0));}
-function curFaena(){return $('#mineSel')?$('#mineSel').value:'mb';}
+function curFaena(){var el=$('#mineSel');var v=el&&el.value;if(v)return v;
+  return (DB.faenas&&DB.faenas.length&&DB.faenas[0].id)||'mb';}
 function areasOf(f,t){return DB.areas.filter(a=>a.faena===f&&(!t||t==='all'||a.tipo===t)&&inScope(a));}
 function kids(id){return DB.areas.filter(function(a){return a.parent===id;}).sort(function(x,y){return (x.orden||0)-(y.orden||0)||String(x.name||'').localeCompare(String(y.name||''));});}
 function isLeaf(a){return !DB.areas.some(function(x){return x.parent===a.id;});}
@@ -481,11 +482,11 @@ function barChart(labels,budget,real,outlook){const id=chartId();
     yaxis:{labels:{formatter:fmtAxisUSD,style:{colors:'#9aabbf',fontSize:'10px'}}},
     legend:{position:'top',horizontalAlign:'right',fontSize:'12px',markers:{radius:4},labels:{colors:'#5d738c'}},tooltip:{y:{formatter:tipUSD}}});
   return '<div id="'+id+'" style="width:100%;height:100%"></div>';}
-function cumBudget(arr){let a=0;return arr.map(v=>(a+=(v||0)));}
+function cumBudget(arr){if(!arr)return Array(12).fill(0);let a=0;return arr.map(v=>(a+=(v||0)));}
 /* Outlook acumulado: se corta después del último mes cargado, para no dibujar una línea plana falsa. */
-function cumOL(arr){var last=-1;for(var i=0;i<12;i++)if((arr[i]||0)!==0)last=i;
+function cumOL(arr){if(!arr)return Array(12).fill(null);var last=-1;for(var i=0;i<12;i++)if((arr[i]||0)!==0)last=i;
   var a=0;return arr.map(function(v,i){if(i>last)return null;a+=(v||0);return a;});}
-function cumReal(arr){let a=0,stop=false;return arr.map(v=>{if(stop||v==null){stop=true;return null;}a+=v;return a;});}
+function cumReal(arr){if(!arr)return Array(12).fill(null);let a=0,stop=false;return arr.map(v=>{if(stop||v==null){stop=true;return null;}a+=v;return a;});}
 /* Barras opuestas Budget vs Real (tipo tornado): Budget a la izquierda, Real a la derecha. */
 function butterfly(items){const id=chartId();if(!items||!items.length)return '<div class="empty">Sin datos</div>';
   var cats=items.map(function(x){return x.n;});
@@ -972,7 +973,13 @@ function viewAreaReport(tipo){var f=curFaena();var fn=(DB.faenas.find(function(x
   var target=AREA_VIEW?DB.areas.find(function(x){return x.id===AREA_VIEW;}):null;
   var t,mon,scopeName,cecoLbl='';
   if(target){t=nodeTot(target.id);mon=nodeMon(target.id);scopeName=target.name;cecoLbl=target.ceco?(' · CECO '+target.ceco):'';}
-  else{t={bAcum:0,rAcum:0,bAnual:0,proy:0};var bb=Array(12).fill(0),rr=Array(12).fill(0);roots.forEach(function(rt){var x=nodeTot(rt.id);t.bAcum+=x.bAcum;t.rAcum+=x.rAcum;t.bAnual+=x.bAnual;t.proy+=x.proy;var mm=nodeMon(rt.id);for(var m=0;m<12;m++){bb[m]+=mm.b[m];if(mm.r[m]!=null)rr[m]+=mm.r[m];}});mon={b:bb,r:rr.map(function(v,m){return m<=MES_ACTUAL?v:null;})};scopeName='Consolidado '+ML;}
+  else{t={bAcum:0,rAcum:0,bAnual:0,oAcum:0,oAnual:0,proy:0};
+    var bb=Array(12).fill(0),rr=Array(12).fill(0),oo=Array(12).fill(0),hrr=Array(12).fill(false);
+    roots.forEach(function(rt){var x=nodeTot(rt.id);t.bAcum+=x.bAcum;t.rAcum+=x.rAcum;t.bAnual+=x.bAnual;t.oAcum+=(x.oAcum||0);t.oAnual+=(x.oAnual||0);
+      var mm=nodeMon(rt.id);for(var m=0;m<12;m++){bb[m]+=mm.b[m];oo[m]+=(mm.o&&mm.o[m])||0;if(mm.r[m]!=null){rr[m]+=mm.r[m];hrr[m]=true;}}});
+    mon={b:bb,o:oo,r:rr.map(function(v,m){return hrr[m]?v:null;})};
+    var prC=proyRitmo(mon.r);t.proy=prC.proy;t.mesesReal=prC.meses;t.promMes=prC.prom;
+    scopeName='Consolidado '+ML;}
   var ejec=t.bAcum?Math.round(t.rAcum/t.bAcum*100):0;var devY=t.bAcum?(t.rAcum-t.bAcum)/t.bAcum:0;var devA=t.bAnual?(t.proy-t.bAnual)/t.bAnual:0;
   var html='<div class="crumb">'+ic(esM?'mina':'planta',13)+' '+fn+'</div><h2 class="title">'+ML+'</h2>'+scopeBanner()+
    '<div class="sectit"><span class="lft">Organigrama de costos</span><span class="pill">despliega con + y pincha el ojo para ver números</span></div>'+mesBar+editbar+tree+
