@@ -364,7 +364,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18p · elegir mes al exportar el PPT';
+const APP_VERSION='2026-08-18q · graficos nativos de PowerPoint en el informe';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -799,59 +799,59 @@ async function buildCierrePPT(){
     s3.addText(rw[1],{x:3.3,y:yy,w:1.55,h:0.34,color:NAVY,fontSize:10,bold:true,fontFace:FONT,valign:'middle',align:'right'});
     if(i<4)s3.addShape('rect',{x:0.68,y:yy+0.38,w:4.14,h:0.008,fill:{color:LINE},line:{type:'none'}});});
   s3.addText('Mayor gasto del mes',{x:5.31,y:2.36,w:4.69,h:0.26,color:NAVY,fontSize:11,bold:true,fontFace:FONT});
-  (function(){var top=areas.slice(0,6),mx=Math.max.apply(null,[1].concat(top.map(function(a){return Math.max(a.b,a.r);})));
-    top.forEach(function(a,i){var yy=2.72+i*0.42;
-      s3.addText(a.n.length>26?a.n.slice(0,25)+'…':a.n,{x:5.31,y:yy,w:2.3,h:0.34,color:INK,fontSize:8,fontFace:FONT,valign:'middle'});
-      s3.addShape('rect',{x:7.65,y:yy+0.12,w:Math.max(0.02,(a.r/mx)*1.55),h:0.11,fill:{color:COP},line:{type:'none'}});
-      s3.addText(money(a.r),{x:9.25,y:yy,w:0.75,h:0.34,color:NAVY,fontSize:8,bold:true,fontFace:FONT,valign:'middle',align:'right'});});})();
+  (function(){var top=areas.slice(0,6);
+    if(!top.length){s3.addText('Sin datos del mes.',{x:5.31,y:2.9,w:4.69,h:0.3,color:MUT,fontSize:9,fontFace:FONT});return;}
+    var cats=top.map(function(a){return a.n.length>24?a.n.slice(0,23)+'…':a.n;}).reverse();
+    s3.addChart(P.ChartType.bar,[{name:'Real del mes',labels:cats,values:top.map(function(a){return Math.round(a.r||0);}).reverse()}],{
+      x:5.31,y:2.62,w:4.69,h:2.5,barDir:'bar',barGapWidthPct:45,chartColors:[COP],
+      showLegend:false,catAxisLabelColor:INK,catAxisLabelFontSize:7.5,catAxisLabelFontFace:FONT,catAxisLineShow:false,
+      valAxisLabelColor:FAINT,valAxisLabelFontSize:7,valAxisLabelFontFace:FONT,valAxisLineShow:false,
+      valAxisLabelFormatCode:'#,##0,"M"',valGridLine:{style:'dash',color:'E5E7EB',size:1},catGridLine:{style:'none'},
+      showValue:false,border:{pt:0,color:'FFFFFF'},fill:'FFFFFF',dataBorder:{pt:0,color:'FFFFFF'},
+      plotArea:{fill:{color:'FFFFFF'}}});})();
   foot(s3);
 
-  /* ===== 4 · Real vs Budget por área ===== */
+  /* ===== 4 · Real vs Budget por área (GRÁFICO NATIVO de PowerPoint) ===== */
   var s4=P.addSlide();head(s4,'DETALLE POR ÁREA  |  '+mCap.toUpperCase()+' '+ANIO,'Real vs Budget por área');
-  (function(){var top=areas.slice(0,11),mx=Math.max.apply(null,[1].concat(top.map(function(a){return Math.max(a.b,a.r);})));
-    s4.addShape('rect',{x:3.6,y:1.15,w:0.14,h:0.11,fill:{color:'5B86B0'},line:{type:'none'}});
-    s4.addText('Budget',{x:3.8,y:1.08,w:0.8,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});
-    s4.addShape('rect',{x:4.7,y:1.15,w:0.14,h:0.11,fill:{color:COP},line:{type:'none'}});
-    s4.addText('Real',{x:4.9,y:1.08,w:0.8,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});
-    if(!top.length)s4.addText('Sin cifras cargadas para este mes.',{x:0.5,y:2.4,w:9,h:0.4,color:MUT,fontSize:11,fontFace:FONT,align:'center'});
-    top.forEach(function(a,i){var yy=1.42+i*0.36,bw=4.3;
-      s4.addText(a.n.length>34?a.n.slice(0,33)+'…':a.n,{x:0.5,y:yy,w:3.0,h:0.32,color:INK,fontSize:8.5,fontFace:FONT,valign:'middle'});
-      s4.addShape('rect',{x:3.6,y:yy+0.05,w:Math.max(0.02,(a.b/mx)*bw),h:0.10,fill:{color:'5B86B0'},line:{type:'none'}});
-      s4.addShape('rect',{x:3.6,y:yy+0.18,w:Math.max(0.02,(a.r/mx)*bw),h:0.10,fill:{color:COP},line:{type:'none'}});
-      var d=a.b?(a.r-a.b)/a.b:0;
-      s4.addText(money(a.r),{x:8.05,y:yy,w:1.05,h:0.32,color:NAVY,fontSize:8,bold:true,fontFace:FONT,valign:'middle',align:'right'});
-      s4.addText(a.b?pct(d):'—',{x:9.1,y:yy,w:0.9,h:0.32,color:(!a.b)?MUT:sem(d),fontSize:8,bold:true,fontFace:FONT,valign:'middle',align:'right'});});
-    if(areas.length>top.length)s4.addText('Mostrando las '+top.length+' áreas de mayor gasto de '+areas.length+' con movimiento en el mes. El detalle completo está en las láminas de Mina y Planta.',
-      {x:0.5,y:5.16,w:9,h:0.22,color:FAINT,fontSize:7,fontFace:FONT});})();
+  (function(){var top=areas.slice(0,10);
+    if(!top.length){s4.addText('Sin cifras cargadas para este mes.',{x:0.5,y:2.4,w:9,h:0.4,color:MUT,fontSize:11,fontFace:FONT,align:'center'});return;}
+    var cats=top.map(function(a){return a.n.length>30?a.n.slice(0,29)+'…':a.n;}).reverse();
+    var hayOL=top.some(function(a){return (a.o||0)!==0;});
+    var ser=[{name:'Budget',labels:cats,values:top.map(function(a){return Math.round(a.b||0);}).reverse()}];
+    if(hayOL)ser.push({name:'Outlook',labels:cats,values:top.map(function(a){return Math.round(a.o||0);}).reverse()});
+    ser.push({name:'Real',labels:cats,values:top.map(function(a){return Math.round(a.r||0);}).reverse()});
+    s4.addChart(P.ChartType.bar,ser,{
+      x:0.5,y:1.16,w:9,h:3.9,barDir:'bar',barGrouping:'clustered',barGapWidthPct:55,
+      chartColors:hayOL?['5B86B0','7FA86B','E27B2E']:['5B86B0','E27B2E'],
+      showLegend:true,legendPos:'t',legendFontSize:9,legendColor:MUT,
+      catAxisLabelColor:INK,catAxisLabelFontSize:8,catAxisLabelFontFace:FONT,catAxisLineShow:false,
+      valAxisLabelColor:FAINT,valAxisLabelFontSize:8,valAxisLabelFontFace:FONT,valAxisLineShow:false,
+      valAxisLabelFormatCode:'#,##0,"M"',valGridLine:{style:'dash',color:'E5E7EB',size:1},catGridLine:{style:'none'},
+      showValue:false,border:{pt:0,color:'FFFFFF'},fill:'FFFFFF',dataBorder:{pt:0,color:'FFFFFF'},
+      plotArea:{fill:{color:'FFFFFF'}}});
+    s4.addText('Cifras en US$K. '+(areas.length>top.length?('Se muestran las '+top.length+' áreas de mayor gasto de '+areas.length+' con movimiento; el detalle completo está en las láminas de Mina y Planta.'):'Todas las áreas con movimiento en el mes.'),
+      {x:0.5,y:5.13,w:9,h:0.24,color:FAINT,fontSize:7,fontFace:FONT});})();
   foot(s4);
 
-  /* ===== 5 · Acumulado del año ===== */
+  /* ===== 5 · Acumulado del año (GRÁFICO NATIVO de PowerPoint) ===== */
   var s5=P.addSlide();head(s5,'TRAYECTORIA '+ANIO,'Acumulado del año');
-  (function(){var mx=Math.max.apply(null,[1].concat(sb,sr,so)),n=labs.length||1;
-    var x0=1.05,aw=8.5,base=4.75,ch=3.2,slot=aw/n;
-    s5.addShape('rect',{x:x0,y:base,w:aw,h:0.012,fill:{color:LINE},line:{type:'none'}});
-    [0.25,0.5,0.75,1].forEach(function(g){var yy=base-ch*g;
-      s5.addShape('rect',{x:x0,y:yy,w:aw,h:0.006,fill:{color:'F1F5F9'},line:{type:'none'}});
-      s5.addText(money(mx*g),{x:0.1,y:yy-0.11,w:0.85,h:0.22,color:FAINT,fontSize:7,fontFace:FONT,align:'right',valign:'middle'});});
+  (function(){
+    if(!labs.length){s5.addText('Sin meses cargados.',{x:0.5,y:2.4,w:9,h:0.4,color:MUT,fontSize:11,fontFace:FONT,align:'center'});return;}
     var hayOL=so.some(function(v){return (v||0)!==0;});
-    labs.forEach(function(L,i){var cx=x0+i*slot,bwd=Math.min(hayOL?0.22:0.30,slot*(hayOL?0.24:0.32));
-      var hb=(sb[i]/mx)*ch,hr=(sr[i]/mx)*ch,ho=(so[i]/mx)*ch;
-      if(hayOL){
-        s5.addShape('rect',{x:cx+slot/2-bwd*1.5-0.04,y:base-hb,w:bwd,h:Math.max(0.01,hb),fill:{color:'5B86B0'},line:{type:'none'}});
-        s5.addShape('rect',{x:cx+slot/2-bwd*0.5,y:base-ho,w:bwd,h:Math.max(0.01,ho),fill:{color:'7FA86B'},line:{type:'none'}});
-        s5.addShape('rect',{x:cx+slot/2+bwd*0.5+0.04,y:base-hr,w:bwd,h:Math.max(0.01,hr),fill:{color:COP},line:{type:'none'}});
-      }else{
-        s5.addShape('rect',{x:cx+slot/2-bwd-0.03,y:base-hb,w:bwd,h:Math.max(0.01,hb),fill:{color:'5B86B0'},line:{type:'none'}});
-        s5.addShape('rect',{x:cx+slot/2+0.03,y:base-hr,w:bwd,h:Math.max(0.01,hr),fill:{color:COP},line:{type:'none'}});}
-      s5.addText(L,{x:cx,y:base+0.06,w:slot,h:0.22,color:MUT,fontSize:7.5,fontFace:FONT,align:'center'});});
-    s5.addShape('rect',{x:x0,y:1.2,w:0.14,h:0.11,fill:{color:'5B86B0'},line:{type:'none'}});
-    s5.addText('Budget acumulado',{x:x0+0.2,y:1.13,w:1.7,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});
-    s5.addShape('rect',{x:x0+2.0,y:1.2,w:0.14,h:0.11,fill:{color:COP},line:{type:'none'}});
-    s5.addText('Real acumulado',{x:x0+2.2,y:1.13,w:1.7,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});
-    if(hayOL){s5.addShape('rect',{x:x0+3.6,y:1.2,w:0.14,h:0.11,fill:{color:'7FA86B'},line:{type:'none'}});
-      s5.addText('Outlook acum.',{x:x0+3.8,y:1.13,w:1.6,h:0.24,color:MUT,fontSize:7.5,fontFace:FONT});}
-    s5.addText('Al cierre de '+mCap+': real '+money(ytd.r)+' contra budget '+money(ytd.b)+'  ·  desviación '+pct(devY),
-      {x:x0+4.2,y:1.11,w:4.7,h:0.28,color:NAVY,fontSize:8.5,bold:true,fontFace:FONT,align:'right'});})();
+    var ser=[{name:'Budget acumulado',labels:labs,values:sb}];
+    if(hayOL)ser.push({name:'Outlook acumulado',labels:labs,values:so});
+    ser.push({name:'Real acumulado',labels:labs,values:sr});
+    s5.addChart(P.ChartType.bar,ser,{
+      x:0.5,y:1.42,w:9,h:3.6,barDir:'col',barGrouping:'clustered',barGapWidthPct:45,
+      chartColors:hayOL?['5B86B0','7FA86B','E27B2E']:['5B86B0','E27B2E'],
+      showLegend:true,legendPos:'t',legendFontSize:9,legendColor:MUT,
+      catAxisLabelColor:INK,catAxisLabelFontSize:8.5,catAxisLabelFontFace:FONT,catAxisLineShow:false,
+      valAxisLabelColor:FAINT,valAxisLabelFontSize:8,valAxisLabelFontFace:FONT,valAxisLineShow:false,
+      valAxisLabelFormatCode:'#,##0,"M"',valGridLine:{style:'dash',color:'E5E7EB',size:1},catGridLine:{style:'none'},
+      showValue:false,border:{pt:0,color:'FFFFFF'},fill:'FFFFFF',dataBorder:{pt:0,color:'FFFFFF'},
+      plotArea:{fill:{color:'FFFFFF'}}});
+    s5.addText('Al cierre de '+mCap+': real '+money(ytd.r)+' contra budget '+money(ytd.b)+'  ·  desviación '+pct(devY)+'  ·  cifras en US$K',
+      {x:0.5,y:5.13,w:9,h:0.24,color:FAINT,fontSize:7.5,fontFace:FONT});})();
   foot(s5);
 
   /* ===== 6 y 7 · Mina y Planta (paginadas, sin recortes silenciosos) ===== */
