@@ -364,7 +364,7 @@ const ADMIN_MODS=['usuarios','claves','config'];
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ANIO=2026; /* año de trabajo — el histórico multianual está pendiente (mantos_costs no tiene columna de año) */
 const MES_ACTUAL=(function(){var h=new Date();var y=h.getFullYear();return y===ANIO?h.getMonth():(y>ANIO?11:0);})();
-const APP_VERSION='2026-08-18r · informe editable + lectura redactada por la plataforma';
+const APP_VERSION='2026-08-18s · la celda vacía manda: recargar limpia lo que ya no viene';
 
 /* ===== Estado ===== */
 let DB={}, SESSION=null, CURRENT='dashboard', EDIT_AREA={}, INF_FILTER='all', CFG_TAB='datos', SCOPE=null;
@@ -1471,8 +1471,8 @@ function parseWorkbook(rows){
     if(!name&&areaC>=0&&row[areaC]!=null)name=(''+row[areaC]).trim();
     var key=(byCeco&&ceco)?ceco.toUpperCase():(name||ceco||'Sin área');
     if(/^total|etiquetas|suma de|general/i.test(name)||/^total/i.test(key))continue;
-    if(!agg[key])agg[key]={name:(name||ceco),ceco:ceco,b:Array(12).fill(0),r:Array(12).fill(0),o:Array(12).fill(0),hb:Array(12).fill(false),hr:Array(12).fill(false),ho:Array(12).fill(false)};
-    if(!agg[key].name&&name)agg[key].name=name;if(!agg[key].ceco&&ceco)agg[key].ceco=ceco;
+    if(!agg[key])agg[key]={name:(name||ceco),ceco:ceco,b:Array(12).fill(0),r:Array(12).fill(0),o:Array(12).fill(0),hb:Array(12).fill(false),hr:Array(12).fill(false),ho:Array(12).fill(false),pres:Array(12).fill(false)};
+    if(!agg[key].name&&name)agg[key].name=name;if(!agg[key].ceco&&ceco)agg[key].ceco=ceco;agg[key].pres[m]=true;
     if(budC>=0){const bv=parseNum(row[budC]);if(bv!=null){agg[key].b[m]+=bv;agg[key].hb[m]=true;maxv=Math.max(maxv,Math.abs(bv));}}
     if(realC>=0){const rv=parseNum(row[realC]);if(rv!=null){agg[key].r[m]+=rv;agg[key].hr[m]=true;maxv=Math.max(maxv,Math.abs(rv));}}
     if(olC>=0&&olC!==budC&&olC!==realC){const ov=parseNum(row[olC]);if(ov!=null){agg[key].o[m]+=ov;agg[key].ho[m]=true;maxv=Math.max(maxv,Math.abs(ov));}}
@@ -1496,6 +1496,11 @@ function renderImportPreview(){const el=$('#importPreview');if(!el)return;if(!IM
     '<div class="mapgrid">'+mc('Mes',p.cols.mes,false)+mc('Área / CECO',p.cols.area,false)+mc('Real',p.cols.real,p.realC<0)+mc('Budget',p.cols.bud,p.budC<0)+mc('Outlook',p.cols.ol,p.olC<0)+'</div>'+
     '<div class="statwrap" style="margin:4px 0 6px"><div class="ministat"><div class="l">Áreas detectadas</div><div class="v">'+p.nAreas+'</div></div><div class="ministat"><div class="l">Celdas de costo</div><div class="v">'+p.nCells+'</div></div><div class="ministat"><div class="l">Meses del archivo</div><div class="v" style="font-size:14px">'+((p.meses&&p.meses.length)?p.meses.join(' · '):'—')+'</div></div><div class="ministat"><div class="l">Unidad</div><div class="v" style="font-size:15px">'+p.unidad+'</div></div></div>'+
     (p.badMes?'<div class="banner" style="border-color:rgba(231,76,60,.4);background:rgba(231,76,60,.07);margin:2px 0 8px">'+ic('shield',18)+'<div><b>'+p.badMes+' fila(s) sin mes reconocible</b> — se van a omitir. Revisa la columna <b>Mes</b> de esas filas.<br><span class="muted">'+escHtml(p.badEj.join(' · '))+'</span></div></div>':'')+
+    (function(){try{var _f=curFaena();var _t=($('#xls_tipo')&&$('#xls_tipo').value)||'mina';var v=vaciadosPorImport(_f,_t,p);if(!v.total)return '';
+      var det=[];if(v.real)det.push('<b>'+v.real+'</b> de Real');if(v.budget)det.push('<b>'+v.budget+'</b> de Budget');if(v.outlook)det.push('<b>'+v.outlook+'</b> de Outlook');
+      var mm=v.meses.map(function(x){return MESES[x];}).join(' \u00b7 ');
+      return '<div class="banner" style="border-color:rgba(243,156,18,.55);background:rgba(243,156,18,.09);margin:2px 0 8px">'+ic('shield',18)+'<div><b>Se van a vaciar '+v.total+' celda(s)</b> porque en el Excel esa columna viene en blanco: '+det.join(', ')+'.<br><span class="muted">Meses afectados: '+mm+'. Si prefieres no perder esos valores, elige <b>Guardar copia en el historial</b> al confirmar.</span></div></div>';
+    }catch(e){return '';}})()+
     '<div class="sectit"><span class="lft">Vista previa · top áreas (YTD Real)</span></div><div class="card" style="background:#fff">'+(samp||'<div class="empty">Sin datos numéricos</div>')+'</div>'+
     '<div class="banner" style="border-color:rgba(46,163,106,.4);background:rgba(46,163,106,.08);margin-top:10px">'+ic('shield',18)+'<div>Al confirmar, las cifras se <b>enganchan por Ceco</b> a cada equipo/área. El <b>organigrama se mantiene intacto</b> y <b>no se borra nada</b>: solo se sobrescriben los meses que traiga este archivo. Todo lo cargado antes se conserva hasta que un administrador use «Restablecer datos a cero».</div></div>'+
     '<div class="flexbtns" style="margin-top:12px"><button class="btn" style="width:auto" onclick="confirmImport()">'+ic('check',16)+' Confirmar y cargar '+tl+'</button><button class="btn ghost" style="width:auto" onclick="IMPORT=null;renderImportPreview()">Cancelar</button></div></div>';
@@ -1527,10 +1532,14 @@ async function doImport(modo){if(!IMPORT||!IMPORT.parsed.ok)return;const p=IMPOR
     matched++;
     var c=DB.costs[target.id]||(DB.costs[target.id]={budget:Array(12).fill(0),real:Array(12).fill(null)});
     if(!c.outlook)c.outlook=Array(12).fill(0);
-    for(let m=0;m<12;m++){if(!G.hb[m]&&!G.hr[m]&&!G.ho[m])continue;
-      if(G.hb[m])c.budget[m]=G.b[m]*p.factor;
-      if(G.hr[m])c.real[m]=G.r[m]*p.factor;
-      if(G.ho[m])c.outlook[m]=G.o[m]*p.factor;
+    for(let m=0;m<12;m++){var enFila=!!(G.pres&&G.pres[m]);
+      if(!enFila&&!G.hb[m]&&!G.hr[m]&&!G.ho[m])continue;
+      /* La celda vacía MANDA: si el Excel trae la columna y la fila del mes viene en blanco,
+         ese valor se vacía. Antes se conservaba el valor viejo y una carga nueva nunca
+         limpiaba lo anterior (por eso el Real de sep-dic sobrevivía recarga tras recarga). */
+      if(G.hb[m])c.budget[m]=G.b[m]*p.factor; else if(enFila&&p.budC>=0)c.budget[m]=0;
+      if(G.hr[m])c.real[m]=G.r[m]*p.factor;   else if(enFila&&p.realC>=0)c.real[m]=null;
+      if(G.ho[m])c.outlook[m]=G.o[m]*p.factor;else if(enFila&&p.olC>=0)c.outlook[m]=0;
       touched[target.id+'|'+m]={area_id:target.id,month:m};}}
   /* 3) guardar en la nube SOLO las celdas que venían en el Excel — el resto del año queda intacto */
   const ups=[];Object.keys(touched).forEach(function(k){var t=touched[k];var c=DB.costs[t.area_id]||nuevoC();ups.push({area_id:t.area_id,month:t.month,budget:c.budget[t.month]||0,real:(c.real[t.month]==null?null:c.real[t.month]),outlook:(c.outlook&&c.outlook[t.month])||0});});
@@ -1563,8 +1572,33 @@ function conflictMonths(f,tipo,p){
     if(!t)return;var c=DB.costs[t.id];if(!c)return;
     for(var m=0;m<12;m++){
       if(G.hr[m]&&c.real[m]!=null&&Number(c.real[m])!==0)ms[m]=1;
-      if(G.hb[m]&&Number(c.budget[m]||0)!==0)ms[m]=1;}});
+      if(G.hb[m]&&Number(c.budget[m]||0)!==0)ms[m]=1;
+      if(G.pres&&G.pres[m]){
+        if(!G.hr[m]&&p.realC>=0&&c.real[m]!=null&&Number(c.real[m])!==0)ms[m]=1;
+        if(!G.hb[m]&&p.budC>=0&&Number(c.budget[m]||0)!==0)ms[m]=1;
+        if(!G.ho[m]&&p.olC>=0&&c.outlook&&Number(c.outlook[m]||0)!==0)ms[m]=1;}}});
   return Object.keys(ms).map(Number).sort(function(a,b){return a-b;});}
+
+/* Celdas que este Excel va a VACIAR: la columna existe en el archivo, la fila del mes
+   viene, pero la celda está en blanco. Se cuentan para avisarle a la usuaria ANTES. */
+function vaciadosPorImport(f,tipo,p){
+  function nC(s){return (''+s).toUpperCase().replace(/\s+/g,'').trim();}
+  function nN(s){return (''+s).toLowerCase().replace(/\s+/g,' ').trim();}
+  var mapCeco={},mapName={};
+  leavesOf(f,tipo).forEach(function(a){if(a.ceco)mapCeco[nC(a.ceco)]=a;if(a.name)mapName[nN(a.name)]=a;});
+  var res={real:0,budget:0,outlook:0},ms={};
+  Object.keys(p.agg).forEach(function(k){var G=p.agg[k],t=null,cands=[];
+    if(G.ceco)cands.push(G.ceco);if(G.name)cands.push(G.name);
+    for(var i=0;i<cands.length&&!t;i++)t=mapCeco[nC(cands[i])]||mapName[nN(cands[i])];
+    if(!t)return;var c=DB.costs[t.id];if(!c)return;
+    for(var m=0;m<12;m++){if(!(G.pres&&G.pres[m]))continue;var hit=false;
+      if(!G.hr[m]&&p.realC>=0&&c.real[m]!=null&&Number(c.real[m])!==0){res.real++;hit=true;}
+      if(!G.hb[m]&&p.budC>=0&&Number(c.budget[m]||0)!==0){res.budget++;hit=true;}
+      if(!G.ho[m]&&p.olC>=0&&c.outlook&&Number(c.outlook[m]||0)!==0){res.outlook++;hit=true;}
+      if(hit)ms[m]=1;}});
+  res.meses=Object.keys(ms).map(Number).sort(function(a,b){return a-b;});
+  res.total=res.real+res.budget+res.outlook;
+  return res;}
 
 /* Guarda una copia del estado ACTUAL de esos meses antes de pisarlos */
 async function snapshotMonths(f,tipo,months,motivo){
